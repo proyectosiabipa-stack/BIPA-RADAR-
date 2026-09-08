@@ -456,8 +456,11 @@
     async function loadData() {
       try {
         setLoading();
-        const response = await fetch(API_URL, { cache: "no-store" });
-        const payload = await response.json();
+        if (!API_URL || API_URL === "TU_URL_DE_APPS_SCRIPT") {
+          throw new Error("Falta configurar API_URL con la URL publicada de Apps Script.");
+        }
+
+        const payload = await loadJsonp(API_URL);
 
         if (!payload.success) {
           throw new Error(payload.message || "Error consultando Apps Script.");
@@ -478,6 +481,32 @@
       fillSelect(els.clientFilter, filters.clientes || uniqueValues(state.rawData, "cliente"), "Todos los clientes");
       fillSelect(els.brandFilter, filters.marcas || uniqueValues(state.rawData, "marca"), "Todas las marcas");
       fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
+    }
+
+    function loadJsonp(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `bipaRadarCallback_${Date.now()}_${Math.round(Math.random() * 100000)}`;
+        const script = document.createElement("script");
+        const separator = url.includes("?") ? "&" : "?";
+
+        window[callbackName] = payload => {
+          cleanup();
+          resolve(payload);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("No se pudo conectar con Apps Script."));
+        };
+
+        script.src = `${url}${separator}callback=${callbackName}&_=${Date.now()}`;
+        document.body.appendChild(script);
+
+        function cleanup() {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+      });
     }
 
     function handleViewMode() {
