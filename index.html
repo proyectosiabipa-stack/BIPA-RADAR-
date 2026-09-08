@@ -472,6 +472,7 @@
         handleViewMode();
       } catch (error) {
         console.error(error);
+        els.lastUpdate.textContent = "Error de conexión";
         renderError("No se pudo cargar la información. Revisa la URL del Apps Script y los permisos.");
       }
     }
@@ -483,11 +484,53 @@
       fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
     }
 
+    async function loadApiData(url) {
+      try {
+        const response = await fetch(`${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`, {
+          cache: "no-store",
+          redirect: "follow"
+        });
+
+        if (!response.ok) {
+          throw new Error(`Apps Script respondió ${response.status}.`);
+        }
+
+        const text = await response.text();
+        return parseApiPayload(text);
+      } catch (error) {
+        console.warn("Fetch directo falló, probando JSONP:", error);
+        return loadJsonp(url);
+      }
+    }
+
+    function parseApiPayload(text) {
+      const clean = String(text || "").trim();
+
+      if (!clean) {
+        throw new Error("Apps Script respondió vacío.");
+      }
+
+      if (clean.startsWith("{") || clean.startsWith("[")) {
+        return JSON.parse(clean);
+      }
+
+      const match = clean.match(/^[\w.$]+\(([\s\S]*)\);?$/);
+      if (match) {
+        return JSON.parse(match[1]);
+      }
+
+      throw new Error("Apps Script no devolvió JSON válido.");
+    }
+
     function loadJsonp(url) {
       return new Promise((resolve, reject) => {
         const callbackName = `bipaRadarCallback_${Date.now()}_${Math.round(Math.random() * 100000)}`;
         const script = document.createElement("script");
         const separator = url.includes("?") ? "&" : "?";
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Apps Script no respondió en formato JSONP. Vuelve a publicar Code.gs como nueva versión."));
+        }, 12000);
 
         window[callbackName] = payload => {
           cleanup();
@@ -503,6 +546,7 @@
         document.body.appendChild(script);
 
         function cleanup() {
+          clearTimeout(timer);
           delete window[callbackName];
           if (script.parentNode) script.parentNode.removeChild(script);
         }
@@ -808,6 +852,12 @@
           <td colspan="11" class="px-4 py-12 text-center font-bold text-red-600">${escapeHtml(message)}</td>
         </tr>
       `;
+      els.insights.innerHTML = renderInsight({
+        tone: "red",
+        title: "No se pudo conectar",
+        text: message
+      });
+      els.qualityPanel.innerHTML = renderQuality("Estado de carga", "Error", "red");
     }
 
     function renderInsight(item) {
