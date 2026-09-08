@@ -1,0 +1,1918 @@
+<!DOCTYPE html>devic
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIPA Radar de Precios</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-900">
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
+            <p class="text-sm text-slate-500">
+              Consulta precios por referencia comparativa, cliente, marca y artículo real.
+            </p>
+          </div>
+          <div id="lastUpdate" class="text-sm text-slate-500"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
+            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="referencia">Ver por referencia</option>
+              <option value="cliente">Ver radar por cliente</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
+            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las referencias</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todos los clientes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
+            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las marcas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Artículo, referencia, cliente..."
+              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Productos</p>
+          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
+          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
+          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
+          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
+          <div class="h-96">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
+          <div class="h-96">
+            <canvas id="gramChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Detalle del radar</h2>
+          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = "<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIPA Radar de Precios</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-900">
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
+            <p class="text-sm text-slate-500">
+              Consulta precios por referencia comparativa, cliente, marca y artículo real.
+            </p>
+          </div>
+          <div id="lastUpdate" class="text-sm text-slate-500"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
+            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="referencia">Ver por referencia</option>
+              <option value="cliente">Ver radar por cliente</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
+            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las referencias</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todos los clientes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
+            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las marcas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Artículo, referencia, cliente..."
+              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Productos</p>
+          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
+          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
+          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
+          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
+          <div class="h-96">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
+          <div class="h-96">
+            <canvas id="gramChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Detalle del radar</h2>
+          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = "<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIPA Radar de Precios</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-900">
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
+            <p class="text-sm text-slate-500">
+              Consulta precios por referencia comparativa, cliente, marca y artículo real.
+            </p>
+          </div>
+          <div id="lastUpdate" class="text-sm text-slate-500"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
+            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="referencia">Ver por referencia</option>
+              <option value="cliente">Ver radar por cliente</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
+            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las referencias</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todos los clientes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
+            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las marcas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Artículo, referencia, cliente..."
+              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Productos</p>
+          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
+          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
+          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
+          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
+          <div class="h-96">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
+          <div class="h-96">
+            <canvas id="gramChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Detalle del radar</h2>
+          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = "<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIPA Radar de Precios</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-900">
+  <div class="min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
+            <p class="text-sm text-slate-500">
+              Consulta precios por referencia comparativa, cliente, marca y artículo real.
+            </p>
+          </div>
+          <div id="lastUpdate" class="text-sm text-slate-500"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
+            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="referencia">Ver por referencia</option>
+              <option value="cliente">Ver radar por cliente</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
+            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las referencias</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todos los clientes</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
+            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              <option value="">Todas las marcas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Artículo, referencia, cliente..."
+              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Productos</p>
+          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
+          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
+          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
+          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
+          <div class="h-96">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-5">
+          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
+          <div class="h-96">
+            <canvas id="gramChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Detalle del radar</h2>
+          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzqq_VqeB-Y4DR_FKveX86os2o7h7lrhspLRgtWOc_scvT5OYTPe1TAlifG-egs0NDPMQ/exec";
+
+    let rawData = [];
+    let filteredData = [];
+    let priceChart = null;
+    let gramChart = null;
+
+    const viewMode = document.getElementById("viewMode");
+    const referenceFilter = document.getElementById("referenceFilter");
+    const clientFilter = document.getElementById("clientFilter");
+    const brandFilter = document.getElementById("brandFilter");
+    const searchInput = document.getElementById("searchInput");
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      bindEvents();
+      await loadData();
+    }
+
+    function bindEvents() {
+      viewMode.addEventListener("change", handleViewModeChange);
+      referenceFilter.addEventListener("change", applyFilters);
+      clientFilter.addEventListener("change", applyFilters);
+      brandFilter.addEventListener("change", applyFilters);
+      searchInput.addEventListener("input", applyFilters);
+    }
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const response = await fetch(API_URL);
+        const payload = await response.json();
+
+        if (!payload.success) {
+          throw new Error(payload.message || "Error consultando Apps Script.");
+        }
+
+        rawData = Array.isArray(payload.data) ? payload.data : [];
+
+        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
+        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
+        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
+
+        document.getElementById("lastUpdate").textContent =
+          "Última actualización: " + new Date().toLocaleString("es-VE");
+
+        handleViewModeChange();
+      } catch (error) {
+        console.error(error);
+        renderError("No se pudo cargar la información del radar.");
+      }
+    }
+
+    function handleViewModeChange() {
+      if (viewMode.value === "cliente") {
+        referenceFilter.disabled = true;
+        referenceFilter.value = "";
+        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
+      } else {
+        referenceFilter.disabled = false;
+        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
+      }
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const mode = viewMode.value;
+      const selectedReference = referenceFilter.value;
+      const selectedClient = clientFilter.value;
+      const selectedBrand = brandFilter.value;
+      const query = normalizeText(searchInput.value);
+
+      filteredData = rawData.filter(item => {
+        const matchesReference =
+          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
+
+        const matchesClient =
+          !selectedClient || item.cliente === selectedClient;
+
+        const matchesBrand =
+          !selectedBrand || item.marca === selectedBrand;
+
+        const searchable = normalizeText([
+          item.cliente,
+          item.referencia,
+          item.articulo,
+          item.marca,
+          item.estado
+        ].join(" "));
+
+        const matchesSearch = !query || searchable.includes(query);
+
+        return matchesReference && matchesClient && matchesBrand && matchesSearch;
+      });
+
+      updateKpis(filteredData);
+      updateCharts(filteredData);
+      renderTable(filteredData);
+    }
+
+    function updateKpis(data) {
+      const prices = data
+        .map(item => Number(item.precioUsd || 0))
+        .filter(price => price > 0);
+
+      const total = data.length;
+      const avgPrice = prices.length
+        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+        : 0;
+
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
+      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
+      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
+    }
+
+    function updateCharts(data) {
+      const chartData = data
+        .slice()
+        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
+        .slice(0, 25);
+
+      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
+
+      renderPriceChart(chartData, labels);
+      renderGramChart(chartData, labels);
+    }
+
+    function renderPriceChart(data, labels) {
+      const ctx = document.getElementById("priceChart");
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio USD",
+            data: data.map(item => Number(item.precioUsd || 0)),
+            backgroundColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgba(37, 99, 235, 0.75)"
+                : "rgba(15, 23, 42, 0.75)"
+            ),
+            borderColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgb(37, 99, 235)"
+                : "rgb(15, 23, 42)"
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => formatCurrency(value))
+      });
+    }
+
+    function renderGramChart(data, labels) {
+      const ctx = document.getElementById("gramChart");
+
+      if (gramChart) gramChart.destroy();
+
+      gramChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio por gramo",
+            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
+            backgroundColor: "rgba(16, 185, 129, 0.75)",
+            borderColor: "rgb(16, 185, 129)",
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => Number(value).toFixed(4))
+      });
+    }
+
+    function chartOptions(tickFormatter) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom"
+          },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 60,
+              minRotation: 30
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: tickFormatter
+            }
+          }
+        }
+      };
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const tableCount = document.getElementById("tableCount");
+
+      tableCount.textContent = `${data.length} registros`;
+
+      if (!data.length) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+              No hay registros para los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = data.map(item => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
+          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">
+            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function brandBadge(brand) {
+      const isBipa = String(brand || "").toUpperCase() === "BIPA";
+      const cls = isBipa
+        ? "bg-blue-100 text-blue-700"
+        : "bg-slate-100 text-slate-700";
+
+      return `
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
+          ${escapeHtml(brand)}
+        </span>
+      `;
+    }
+
+    function fillSelect(select, values, defaultLabel) {
+      select.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function uniqueValues(data, key) {
+      return [...new Set(
+        data
+          .map(item => item[key])
+          .filter(value => String(value || "").trim() !== "")
+      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
+    }
+
+    function setLoading(isLoading) {
+      if (!isLoading) return;
+
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+            Cargando radar de precios...
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-red-600">
+            ${escapeHtml(message)}
+          </td>
+        </tr>
+      `;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function truncateLabel(value, maxLength) {
+      const text = String(value || "");
+      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
+    }
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>";
+
+    let rawData = [];
+    let filteredData = [];
+    let priceChart = null;
+    let gramChart = null;
+
+    const viewMode = document.getElementById("viewMode");
+    const referenceFilter = document.getElementById("referenceFilter");
+    const clientFilter = document.getElementById("clientFilter");
+    const brandFilter = document.getElementById("brandFilter");
+    const searchInput = document.getElementById("searchInput");
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      bindEvents();
+      await loadData();
+    }
+
+    function bindEvents() {
+      viewMode.addEventListener("change", handleViewModeChange);
+      referenceFilter.addEventListener("change", applyFilters);
+      clientFilter.addEventListener("change", applyFilters);
+      brandFilter.addEventListener("change", applyFilters);
+      searchInput.addEventListener("input", applyFilters);
+    }
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const response = await fetch(API_URL);
+        const payload = await response.json();
+
+        if (!payload.success) {
+          throw new Error(payload.message || "Error consultando Apps Script.");
+        }
+
+        rawData = Array.isArray(payload.data) ? payload.data : [];
+
+        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
+        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
+        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
+
+        document.getElementById("lastUpdate").textContent =
+          "Última actualización: " + new Date().toLocaleString("es-VE");
+
+        handleViewModeChange();
+      } catch (error) {
+        console.error(error);
+        renderError("No se pudo cargar la información del radar.");
+      }
+    }
+
+    function handleViewModeChange() {
+      if (viewMode.value === "cliente") {
+        referenceFilter.disabled = true;
+        referenceFilter.value = "";
+        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
+      } else {
+        referenceFilter.disabled = false;
+        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
+      }
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const mode = viewMode.value;
+      const selectedReference = referenceFilter.value;
+      const selectedClient = clientFilter.value;
+      const selectedBrand = brandFilter.value;
+      const query = normalizeText(searchInput.value);
+
+      filteredData = rawData.filter(item => {
+        const matchesReference =
+          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
+
+        const matchesClient =
+          !selectedClient || item.cliente === selectedClient;
+
+        const matchesBrand =
+          !selectedBrand || item.marca === selectedBrand;
+
+        const searchable = normalizeText([
+          item.cliente,
+          item.referencia,
+          item.articulo,
+          item.marca,
+          item.estado
+        ].join(" "));
+
+        const matchesSearch = !query || searchable.includes(query);
+
+        return matchesReference && matchesClient && matchesBrand && matchesSearch;
+      });
+
+      updateKpis(filteredData);
+      updateCharts(filteredData);
+      renderTable(filteredData);
+    }
+
+    function updateKpis(data) {
+      const prices = data
+        .map(item => Number(item.precioUsd || 0))
+        .filter(price => price > 0);
+
+      const total = data.length;
+      const avgPrice = prices.length
+        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+        : 0;
+
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
+      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
+      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
+    }
+
+    function updateCharts(data) {
+      const chartData = data
+        .slice()
+        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
+        .slice(0, 25);
+
+      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
+
+      renderPriceChart(chartData, labels);
+      renderGramChart(chartData, labels);
+    }
+
+    function renderPriceChart(data, labels) {
+      const ctx = document.getElementById("priceChart");
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio USD",
+            data: data.map(item => Number(item.precioUsd || 0)),
+            backgroundColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgba(37, 99, 235, 0.75)"
+                : "rgba(15, 23, 42, 0.75)"
+            ),
+            borderColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgb(37, 99, 235)"
+                : "rgb(15, 23, 42)"
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => formatCurrency(value))
+      });
+    }
+
+    function renderGramChart(data, labels) {
+      const ctx = document.getElementById("gramChart");
+
+      if (gramChart) gramChart.destroy();
+
+      gramChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio por gramo",
+            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
+            backgroundColor: "rgba(16, 185, 129, 0.75)",
+            borderColor: "rgb(16, 185, 129)",
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => Number(value).toFixed(4))
+      });
+    }
+
+    function chartOptions(tickFormatter) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom"
+          },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 60,
+              minRotation: 30
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: tickFormatter
+            }
+          }
+        }
+      };
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const tableCount = document.getElementById("tableCount");
+
+      tableCount.textContent = `${data.length} registros`;
+
+      if (!data.length) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+              No hay registros para los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = data.map(item => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
+          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">
+            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function brandBadge(brand) {
+      const isBipa = String(brand || "").toUpperCase() === "BIPA";
+      const cls = isBipa
+        ? "bg-blue-100 text-blue-700"
+        : "bg-slate-100 text-slate-700";
+
+      return `
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
+          ${escapeHtml(brand)}
+        </span>
+      `;
+    }
+
+    function fillSelect(select, values, defaultLabel) {
+      select.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function uniqueValues(data, key) {
+      return [...new Set(
+        data
+          .map(item => item[key])
+          .filter(value => String(value || "").trim() !== "")
+      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
+    }
+
+    function setLoading(isLoading) {
+      if (!isLoading) return;
+
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+            Cargando radar de precios...
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-red-600">
+            ${escapeHtml(message)}
+          </td>
+        </tr>
+      `;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function truncateLabel(value, maxLength) {
+      const text = String(value || "");
+      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
+    }
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+";
+
+    let rawData = [];
+    let filteredData = [];
+    let priceChart = null;
+    let gramChart = null;
+
+    const viewMode = document.getElementById("viewMode");
+    const referenceFilter = document.getElementById("referenceFilter");
+    const clientFilter = document.getElementById("clientFilter");
+    const brandFilter = document.getElementById("brandFilter");
+    const searchInput = document.getElementById("searchInput");
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      bindEvents();
+      await loadData();
+    }
+
+    function bindEvents() {
+      viewMode.addEventListener("change", handleViewModeChange);
+      referenceFilter.addEventListener("change", applyFilters);
+      clientFilter.addEventListener("change", applyFilters);
+      brandFilter.addEventListener("change", applyFilters);
+      searchInput.addEventListener("input", applyFilters);
+    }
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const response = await fetch(API_URL);
+        const payload = await response.json();
+
+        if (!payload.success) {
+          throw new Error(payload.message || "Error consultando Apps Script.");
+        }
+
+        rawData = Array.isArray(payload.data) ? payload.data : [];
+
+        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
+        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
+        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
+
+        document.getElementById("lastUpdate").textContent =
+          "Última actualización: " + new Date().toLocaleString("es-VE");
+
+        handleViewModeChange();
+      } catch (error) {
+        console.error(error);
+        renderError("No se pudo cargar la información del radar.");
+      }
+    }
+
+    function handleViewModeChange() {
+      if (viewMode.value === "cliente") {
+        referenceFilter.disabled = true;
+        referenceFilter.value = "";
+        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
+      } else {
+        referenceFilter.disabled = false;
+        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
+      }
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const mode = viewMode.value;
+      const selectedReference = referenceFilter.value;
+      const selectedClient = clientFilter.value;
+      const selectedBrand = brandFilter.value;
+      const query = normalizeText(searchInput.value);
+
+      filteredData = rawData.filter(item => {
+        const matchesReference =
+          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
+
+        const matchesClient =
+          !selectedClient || item.cliente === selectedClient;
+
+        const matchesBrand =
+          !selectedBrand || item.marca === selectedBrand;
+
+        const searchable = normalizeText([
+          item.cliente,
+          item.referencia,
+          item.articulo,
+          item.marca,
+          item.estado
+        ].join(" "));
+
+        const matchesSearch = !query || searchable.includes(query);
+
+        return matchesReference && matchesClient && matchesBrand && matchesSearch;
+      });
+
+      updateKpis(filteredData);
+      updateCharts(filteredData);
+      renderTable(filteredData);
+    }
+
+    function updateKpis(data) {
+      const prices = data
+        .map(item => Number(item.precioUsd || 0))
+        .filter(price => price > 0);
+
+      const total = data.length;
+      const avgPrice = prices.length
+        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+        : 0;
+
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
+      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
+      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
+    }
+
+    function updateCharts(data) {
+      const chartData = data
+        .slice()
+        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
+        .slice(0, 25);
+
+      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
+
+      renderPriceChart(chartData, labels);
+      renderGramChart(chartData, labels);
+    }
+
+    function renderPriceChart(data, labels) {
+      const ctx = document.getElementById("priceChart");
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio USD",
+            data: data.map(item => Number(item.precioUsd || 0)),
+            backgroundColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgba(37, 99, 235, 0.75)"
+                : "rgba(15, 23, 42, 0.75)"
+            ),
+            borderColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgb(37, 99, 235)"
+                : "rgb(15, 23, 42)"
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => formatCurrency(value))
+      });
+    }
+
+    function renderGramChart(data, labels) {
+      const ctx = document.getElementById("gramChart");
+
+      if (gramChart) gramChart.destroy();
+
+      gramChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio por gramo",
+            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
+            backgroundColor: "rgba(16, 185, 129, 0.75)",
+            borderColor: "rgb(16, 185, 129)",
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => Number(value).toFixed(4))
+      });
+    }
+
+    function chartOptions(tickFormatter) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom"
+          },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 60,
+              minRotation: 30
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: tickFormatter
+            }
+          }
+        }
+      };
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const tableCount = document.getElementById("tableCount");
+
+      tableCount.textContent = `${data.length} registros`;
+
+      if (!data.length) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+              No hay registros para los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = data.map(item => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
+          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">
+            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function brandBadge(brand) {
+      const isBipa = String(brand || "").toUpperCase() === "BIPA";
+      const cls = isBipa
+        ? "bg-blue-100 text-blue-700"
+        : "bg-slate-100 text-slate-700";
+
+      return `
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
+          ${escapeHtml(brand)}
+        </span>
+      `;
+    }
+
+    function fillSelect(select, values, defaultLabel) {
+      select.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function uniqueValues(data, key) {
+      return [...new Set(
+        data
+          .map(item => item[key])
+          .filter(value => String(value || "").trim() !== "")
+      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
+    }
+
+    function setLoading(isLoading) {
+      if (!isLoading) return;
+
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+            Cargando radar de precios...
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-red-600">
+            ${escapeHtml(message)}
+          </td>
+        </tr>
+      `;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function truncateLabel(value, maxLength) {
+      const text = String(value || "");
+      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
+    }
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>";
+
+    let rawData = [];
+    let filteredData = [];
+    let priceChart = null;
+    let gramChart = null;
+
+    const viewMode = document.getElementById("viewMode");
+    const referenceFilter = document.getElementById("referenceFilter");
+    const clientFilter = document.getElementById("clientFilter");
+    const brandFilter = document.getElementById("brandFilter");
+    const searchInput = document.getElementById("searchInput");
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      bindEvents();
+      await loadData();
+    }
+
+    function bindEvents() {
+      viewMode.addEventListener("change", handleViewModeChange);
+      referenceFilter.addEventListener("change", applyFilters);
+      clientFilter.addEventListener("change", applyFilters);
+      brandFilter.addEventListener("change", applyFilters);
+      searchInput.addEventListener("input", applyFilters);
+    }
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const response = await fetch(API_URL);
+        const payload = await response.json();
+
+        if (!payload.success) {
+          throw new Error(payload.message || "Error consultando Apps Script.");
+        }
+
+        rawData = Array.isArray(payload.data) ? payload.data : [];
+
+        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
+        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
+        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
+
+        document.getElementById("lastUpdate").textContent =
+          "Última actualización: " + new Date().toLocaleString("es-VE");
+
+        handleViewModeChange();
+      } catch (error) {
+        console.error(error);
+        renderError("No se pudo cargar la información del radar.");
+      }
+    }
+
+    function handleViewModeChange() {
+      if (viewMode.value === "cliente") {
+        referenceFilter.disabled = true;
+        referenceFilter.value = "";
+        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
+      } else {
+        referenceFilter.disabled = false;
+        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
+      }
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const mode = viewMode.value;
+      const selectedReference = referenceFilter.value;
+      const selectedClient = clientFilter.value;
+      const selectedBrand = brandFilter.value;
+      const query = normalizeText(searchInput.value);
+
+      filteredData = rawData.filter(item => {
+        const matchesReference =
+          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
+
+        const matchesClient =
+          !selectedClient || item.cliente === selectedClient;
+
+        const matchesBrand =
+          !selectedBrand || item.marca === selectedBrand;
+
+        const searchable = normalizeText([
+          item.cliente,
+          item.referencia,
+          item.articulo,
+          item.marca,
+          item.estado
+        ].join(" "));
+
+        const matchesSearch = !query || searchable.includes(query);
+
+        return matchesReference && matchesClient && matchesBrand && matchesSearch;
+      });
+
+      updateKpis(filteredData);
+      updateCharts(filteredData);
+      renderTable(filteredData);
+    }
+
+    function updateKpis(data) {
+      const prices = data
+        .map(item => Number(item.precioUsd || 0))
+        .filter(price => price > 0);
+
+      const total = data.length;
+      const avgPrice = prices.length
+        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+        : 0;
+
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
+      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
+      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
+    }
+
+    function updateCharts(data) {
+      const chartData = data
+        .slice()
+        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
+        .slice(0, 25);
+
+      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
+
+      renderPriceChart(chartData, labels);
+      renderGramChart(chartData, labels);
+    }
+
+    function renderPriceChart(data, labels) {
+      const ctx = document.getElementById("priceChart");
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio USD",
+            data: data.map(item => Number(item.precioUsd || 0)),
+            backgroundColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgba(37, 99, 235, 0.75)"
+                : "rgba(15, 23, 42, 0.75)"
+            ),
+            borderColor: data.map(item =>
+              String(item.marca || "").toUpperCase() === "BIPA"
+                ? "rgb(37, 99, 235)"
+                : "rgb(15, 23, 42)"
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => formatCurrency(value))
+      });
+    }
+
+    function renderGramChart(data, labels) {
+      const ctx = document.getElementById("gramChart");
+
+      if (gramChart) gramChart.destroy();
+
+      gramChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Precio por gramo",
+            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
+            backgroundColor: "rgba(16, 185, 129, 0.75)",
+            borderColor: "rgb(16, 185, 129)",
+            borderWidth: 1
+          }]
+        },
+        options: chartOptions(value => Number(value).toFixed(4))
+      });
+    }
+
+    function chartOptions(tickFormatter) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom"
+          },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 60,
+              minRotation: 30
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: tickFormatter
+            }
+          }
+        }
+      };
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const tableCount = document.getElementById("tableCount");
+
+      tableCount.textContent = `${data.length} registros`;
+
+      if (!data.length) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+              No hay registros para los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = data.map(item => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
+          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
+          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
+          <td class="px-4 py-3 text-sm text-right text-slate-700">
+            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function brandBadge(brand) {
+      const isBipa = String(brand || "").toUpperCase() === "BIPA";
+      const cls = isBipa
+        ? "bg-blue-100 text-blue-700"
+        : "bg-slate-100 text-slate-700";
+
+      return `
+        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
+          ${escapeHtml(brand)}
+        </span>
+      `;
+    }
+
+    function fillSelect(select, values, defaultLabel) {
+      select.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function uniqueValues(data, key) {
+      return [...new Set(
+        data
+          .map(item => item[key])
+          .filter(value => String(value || "").trim() !== "")
+      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
+    }
+
+    function setLoading(isLoading) {
+      if (!isLoading) return;
+
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+            Cargando radar de precios...
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById("tableBody").innerHTML = `
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-red-600">
+            ${escapeHtml(message)}
+          </td>
+        </tr>
+      `;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function truncateLabel(value, maxLength) {
+      const text = String(value || "");
+      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
+    }
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("es-VE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
