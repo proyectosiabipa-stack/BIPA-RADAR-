@@ -1,1085 +1,713 @@
-<!DOCTYPE html>devic
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BIPA Radar de Precios</title>
-
+  <title>BIPA Radar Intelligence</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body class="bg-slate-100 text-slate-900">
-  <div class="min-h-screen">
-    <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
-            <p class="text-sm text-slate-500">
-              Consulta precios por referencia comparativa, cliente, marca y artículo real.
-            </p>
-          </div>
-          <div id="lastUpdate" class="text-sm text-slate-500"></div>
-        </div>
-      </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
-            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="referencia">Ver por referencia</option>
-              <option value="cliente">Ver radar por cliente</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
-            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las referencias</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todos los clientes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
-            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las marcas</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Artículo, referencia, cliente..."
-              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Productos</p>
-          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
-          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
-          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
-          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
-          <div class="h-96">
-            <canvas id="priceChart"></canvas>
-          </div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
-          <div class="h-96">
-            <canvas id="gramChart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Detalle del radar</h2>
-          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
   <script>
-    const API_URL = "<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BIPA Radar de Precios</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body class="bg-slate-100 text-slate-900">
-  <div class="min-h-screen">
-    <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
-            <p class="text-sm text-slate-500">
-              Consulta precios por referencia comparativa, cliente, marca y artículo real.
-            </p>
-          </div>
-          <div id="lastUpdate" class="text-sm text-slate-500"></div>
-        </div>
-      </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
-            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="referencia">Ver por referencia</option>
-              <option value="cliente">Ver radar por cliente</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
-            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las referencias</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todos los clientes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
-            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las marcas</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Artículo, referencia, cliente..."
-              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Productos</p>
-          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
-          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
-          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
-          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
-          <div class="h-96">
-            <canvas id="priceChart"></canvas>
-          </div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
-          <div class="h-96">
-            <canvas id="gramChart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Detalle del radar</h2>
-          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const API_URL = "<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BIPA Radar de Precios</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body class="bg-slate-100 text-slate-900">
-  <div class="min-h-screen">
-    <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
-            <p class="text-sm text-slate-500">
-              Consulta precios por referencia comparativa, cliente, marca y artículo real.
-            </p>
-          </div>
-          <div id="lastUpdate" class="text-sm text-slate-500"></div>
-        </div>
-      </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
-            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="referencia">Ver por referencia</option>
-              <option value="cliente">Ver radar por cliente</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
-            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las referencias</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todos los clientes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
-            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las marcas</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Artículo, referencia, cliente..."
-              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Productos</p>
-          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
-          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
-          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
-          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
-          <div class="h-96">
-            <canvas id="priceChart"></canvas>
-          </div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
-          <div class="h-96">
-            <canvas id="gramChart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Detalle del radar</h2>
-          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const API_URL = "<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BIPA Radar de Precios</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body class="bg-slate-100 text-slate-900">
-  <div class="min-h-screen">
-    <header class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold">BIPA Radar de Precios</h1>
-            <p class="text-sm text-slate-500">
-              Consulta precios por referencia comparativa, cliente, marca y artículo real.
-            </p>
-          </div>
-          <div id="lastUpdate" class="text-sm text-slate-500"></div>
-        </div>
-      </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <section class="bg-white border border-slate-200 rounded-lg p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label for="viewMode" class="block text-sm font-medium text-slate-700 mb-1">Vista</label>
-            <select id="viewMode" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="referencia">Ver por referencia</option>
-              <option value="cliente">Ver radar por cliente</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="referenceFilter" class="block text-sm font-medium text-slate-700 mb-1">Referencia</label>
-            <select id="referenceFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las referencias</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="clientFilter" class="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <select id="clientFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todos los clientes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="brandFilter" class="block text-sm font-medium text-slate-700 mb-1">Marca</label>
-            <select id="brandFilter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="">Todas las marcas</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="searchInput" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Artículo, referencia, cliente..."
-              class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Productos</p>
-          <p id="kpiTotal" class="text-3xl font-bold mt-2">0</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio promedio</p>
-          <p id="kpiAvgPrice" class="text-3xl font-bold mt-2">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio mínimo</p>
-          <p id="kpiMinPrice" class="text-3xl font-bold mt-2 text-emerald-600">$0.00</p>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <p class="text-sm font-medium text-slate-500">Precio máximo</p>
-          <p id="kpiMaxPrice" class="text-3xl font-bold mt-2 text-red-600">$0.00</p>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 id="priceChartTitle" class="text-lg font-semibold mb-4">Precios por producto</h2>
-          <div class="h-96">
-            <canvas id="priceChart"></canvas>
-          </div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-lg p-5">
-          <h2 class="text-lg font-semibold mb-4">Precio por gramo</h2>
-          <div class="h-96">
-            <canvas id="gramChart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Detalle del radar</h2>
-          <span id="tableCount" class="text-sm text-slate-500">0 registros</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cliente</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Referencia</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Artículo real</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Marca</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Peso</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Precio USD</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">$/g</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-slate-200"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzqq_VqeB-Y4DR_FKveX86os2o7h7lrhspLRgtWOc_scvT5OYTPe1TAlifG-egs0NDPMQ/exec";
-
-    let rawData = [];
-    let filteredData = [];
-    let priceChart = null;
-    let gramChart = null;
-
-    const viewMode = document.getElementById("viewMode");
-    const referenceFilter = document.getElementById("referenceFilter");
-    const clientFilter = document.getElementById("clientFilter");
-    const brandFilter = document.getElementById("brandFilter");
-    const searchInput = document.getElementById("searchInput");
-
-    document.addEventListener("DOMContentLoaded", init);
-
-    async function init() {
-      bindEvents();
-      await loadData();
-    }
-
-    function bindEvents() {
-      viewMode.addEventListener("change", handleViewModeChange);
-      referenceFilter.addEventListener("change", applyFilters);
-      clientFilter.addEventListener("change", applyFilters);
-      brandFilter.addEventListener("change", applyFilters);
-      searchInput.addEventListener("input", applyFilters);
-    }
-
-    async function loadData() {
-      try {
-        setLoading(true);
-
-        const response = await fetch(API_URL);
-        const payload = await response.json();
-
-        if (!payload.success) {
-          throw new Error(payload.message || "Error consultando Apps Script.");
-        }
-
-        rawData = Array.isArray(payload.data) ? payload.data : [];
-
-        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
-        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
-        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
-
-        document.getElementById("lastUpdate").textContent =
-          "Última actualización: " + new Date().toLocaleString("es-VE");
-
-        handleViewModeChange();
-      } catch (error) {
-        console.error(error);
-        renderError("No se pudo cargar la información del radar.");
-      }
-    }
-
-    function handleViewModeChange() {
-      if (viewMode.value === "cliente") {
-        referenceFilter.disabled = true;
-        referenceFilter.value = "";
-        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
-      } else {
-        referenceFilter.disabled = false;
-        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
-      }
-
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const mode = viewMode.value;
-      const selectedReference = referenceFilter.value;
-      const selectedClient = clientFilter.value;
-      const selectedBrand = brandFilter.value;
-      const query = normalizeText(searchInput.value);
-
-      filteredData = rawData.filter(item => {
-        const matchesReference =
-          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
-
-        const matchesClient =
-          !selectedClient || item.cliente === selectedClient;
-
-        const matchesBrand =
-          !selectedBrand || item.marca === selectedBrand;
-
-        const searchable = normalizeText([
-          item.cliente,
-          item.referencia,
-          item.articulo,
-          item.marca,
-          item.estado
-        ].join(" "));
-
-        const matchesSearch = !query || searchable.includes(query);
-
-        return matchesReference && matchesClient && matchesBrand && matchesSearch;
-      });
-
-      updateKpis(filteredData);
-      updateCharts(filteredData);
-      renderTable(filteredData);
-    }
-
-    function updateKpis(data) {
-      const prices = data
-        .map(item => Number(item.precioUsd || 0))
-        .filter(price => price > 0);
-
-      const total = data.length;
-      const avgPrice = prices.length
-        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
-        : 0;
-
-      const minPrice = prices.length ? Math.min(...prices) : 0;
-      const maxPrice = prices.length ? Math.max(...prices) : 0;
-
-      document.getElementById("kpiTotal").textContent = total;
-      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
-      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
-      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
-    }
-
-    function updateCharts(data) {
-      const chartData = data
-        .slice()
-        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
-        .slice(0, 25);
-
-      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
-
-      renderPriceChart(chartData, labels);
-      renderGramChart(chartData, labels);
-    }
-
-    function renderPriceChart(data, labels) {
-      const ctx = document.getElementById("priceChart");
-
-      if (priceChart) priceChart.destroy();
-
-      priceChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio USD",
-            data: data.map(item => Number(item.precioUsd || 0)),
-            backgroundColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgba(37, 99, 235, 0.75)"
-                : "rgba(15, 23, 42, 0.75)"
-            ),
-            borderColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgb(37, 99, 235)"
-                : "rgb(15, 23, 42)"
-            ),
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => formatCurrency(value))
-      });
-    }
-
-    function renderGramChart(data, labels) {
-      const ctx = document.getElementById("gramChart");
-
-      if (gramChart) gramChart.destroy();
-
-      gramChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio por gramo",
-            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
-            backgroundColor: "rgba(16, 185, 129, 0.75)",
-            borderColor: "rgb(16, 185, 129)",
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => Number(value).toFixed(4))
-      });
-    }
-
-    function chartOptions(tickFormatter) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom"
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Arial"]
           },
-          tooltip: {
-            callbacks: {
-              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              maxRotation: 60,
-              minRotation: 30
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: tickFormatter
-            }
+          boxShadow: {
+            glow: "0 22px 80px rgba(28, 75, 140, 0.18)",
+            soft: "0 16px 44px rgba(20, 31, 51, 0.10)"
           }
         }
-      };
-    }
-
-    function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const tableCount = document.getElementById("tableCount");
-
-      tableCount.textContent = `${data.length} registros`;
-
-      if (!data.length) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-              No hay registros para los filtros seleccionados.
-            </td>
-          </tr>
-        `;
-        return;
       }
-
-      tableBody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
-          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">
-            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
-          </td>
-        </tr>
-      `).join("");
-    }
-
-    function brandBadge(brand) {
-      const isBipa = String(brand || "").toUpperCase() === "BIPA";
-      const cls = isBipa
-        ? "bg-blue-100 text-blue-700"
-        : "bg-slate-100 text-slate-700";
-
-      return `
-        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
-          ${escapeHtml(brand)}
-        </span>
-      `;
-    }
-
-    function fillSelect(select, values, defaultLabel) {
-      select.innerHTML = `<option value="">${defaultLabel}</option>`;
-
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    function uniqueValues(data, key) {
-      return [...new Set(
-        data
-          .map(item => item[key])
-          .filter(value => String(value || "").trim() !== "")
-      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
-    }
-
-    function setLoading(isLoading) {
-      if (!isLoading) return;
-
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-            Cargando radar de precios...
-          </td>
-        </tr>
-      `;
-    }
-
-    function renderError(message) {
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-red-600">
-            ${escapeHtml(message)}
-          </td>
-        </tr>
-      `;
-    }
-
-    function normalizeText(value) {
-      return String(value || "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-    }
-
-    function truncateLabel(value, maxLength) {
-      const text = String(value || "");
-      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
-    }
-
-    function formatCurrency(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function formatNumber(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
+    };
   </script>
-</body>
-</html>";
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
-    let rawData = [];
-    let filteredData = [];
-    let priceChart = null;
-    let gramChart = null;
+    :root {
+      --ink: #07111f;
+      --muted: #64748b;
+      --line: rgba(148, 163, 184, 0.28);
+      --panel: rgba(255, 255, 255, 0.82);
+      --blue: #2563eb;
+      --green: #059669;
+      --red: #dc2626;
+      --amber: #d97706;
+      --violet: #7c3aed;
+    }
 
-    const viewMode = document.getElementById("viewMode");
-    const referenceFilter = document.getElementById("referenceFilter");
-    const clientFilter = document.getElementById("clientFilter");
-    const brandFilter = document.getElementById("brandFilter");
-    const searchInput = document.getElementById("searchInput");
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(37, 99, 235, 0.14), transparent 32%),
+        radial-gradient(circle at 92% 12%, rgba(5, 150, 105, 0.12), transparent 28%),
+        linear-gradient(135deg, #eef4fb 0%, #f8fafc 44%, #eef6f1 100%);
+      color: var(--ink);
+    }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.90);
+      border: 1px solid var(--line);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+    }
+
+    .fade-up {
+      animation: fadeUp 0.68s cubic-bezier(.2, .8, .2, 1) both;
+    }
+
+    .stagger-1 { animation-delay: .04s; }
+    .stagger-2 { animation-delay: .08s; }
+    .stagger-3 { animation-delay: .12s; }
+    .stagger-4 { animation-delay: .16s; }
+    .stagger-5 { animation-delay: .20s; }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .pulse-dot {
+      position: relative;
+    }
+
+    .pulse-dot::after {
+      content: "";
+      position: absolute;
+      inset: -5px;
+      border-radius: 999px;
+      border: 1px solid rgba(5, 150, 105, .42);
+      animation: ping 1.6s ease-out infinite;
+    }
+
+    @keyframes ping {
+      from {
+        opacity: .75;
+        transform: scale(.7);
+      }
+      to {
+        opacity: 0;
+        transform: scale(1.8);
+      }
+    }
+
+    .shimmer {
+      background: linear-gradient(90deg, #edf2f7 25%, #f8fafc 38%, #edf2f7 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+
+    .nice-scroll::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+
+    .nice-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+
+    .nice-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    .field {
+      height: 44px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, .42);
+      background: rgba(255, 255, 255, .84);
+      padding: 0 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .field:focus {
+      border-color: rgba(37, 99, 235, .78);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+    }
+
+    .field:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+
+    .tab-active {
+      background: #07111f;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(7, 17, 31, .22);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="min-h-screen">
+    <header class="sticky top-0 z-40 border-b border-white/70 bg-white/72 backdrop-blur-xl">
+      <div class="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div class="flex items-center gap-4">
+            <div class="grid h-12 w-12 place-items-center rounded-lg bg-slate-950 text-lg font-black text-white shadow-soft">
+              BI
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-3">
+                <h1 class="text-2xl font-black tracking-tight sm:text-3xl">BIPA Radar Intelligence</h1>
+                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                  <span class="pulse-dot h-2 w-2 rounded-full bg-emerald-500"></span>
+                  Conectado
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-slate-500">
+                Inteligencia de precios por referencia, cliente, marca y artículo real.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+            <button id="refreshBtn" class="rounded-lg bg-slate-950 px-4 py-2 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-slate-800">
+              Actualizar
+            </button>
+            <button id="exportBtn" class="rounded-lg bg-white px-4 py-2 font-bold text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-slate-300">
+              Exportar CSV
+            </button>
+            <span id="lastUpdate" class="rounded-lg bg-white/70 px-3 py-2 ring-1 ring-slate-200">Sin actualizar</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+      <section class="glass fade-up rounded-lg p-4">
+        <div class="flex flex-col gap-4 2xl:flex-row 2xl:items-end">
+          <div class="min-w-[260px]">
+            <p class="mb-2 text-xs font-black uppercase tracking-[.18em] text-slate-500">Modo de análisis</p>
+            <div class="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+              <button class="view-tab tab-active rounded-md px-3 py-2 text-sm font-black transition" data-view="referencia">Referencia</button>
+              <button class="view-tab rounded-md px-3 py-2 text-sm font-black text-slate-600 transition hover:bg-white" data-view="cliente">Cliente</button>
+            </div>
+          </div>
+
+          <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Referencia</span>
+              <select id="referenceFilter" class="field"></select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Cliente</span>
+              <select id="clientFilter" class="field"></select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Marca</span>
+              <select id="brandFilter" class="field"></select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Estatus</span>
+              <select id="statusFilter" class="field"></select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Top gráfico</span>
+              <select id="topFilter" class="field">
+                <option value="10">Top 10</option>
+                <option value="25" selected>Top 25</option>
+                <option value="50">Top 50</option>
+                <option value="9999">Todos</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-bold text-slate-500">Buscar</span>
+              <input id="searchInput" class="field" type="search" placeholder="Artículo, cliente..." />
+            </label>
+          </div>
+
+          <button id="clearBtn" class="h-11 rounded-lg bg-white px-4 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-blue-200">
+            Limpiar
+          </button>
+        </div>
+      </section>
+
+      <section class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <article class="kpi panel fade-up stagger-1 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Productos</p>
+          <p id="kpiProducts" class="mt-3 text-4xl font-black">0</p>
+          <span class="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">Registros filtrados</span>
+        </article>
+        <article class="kpi panel fade-up stagger-2 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Referencias</p>
+          <p id="kpiReferences" class="mt-3 text-4xl font-black">0</p>
+          <span class="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">Comparables</span>
+        </article>
+        <article class="kpi panel fade-up stagger-3 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Clientes</p>
+          <p id="kpiClients" class="mt-3 text-4xl font-black">0</p>
+          <span class="mt-3 inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-700">Cobertura</span>
+        </article>
+        <article class="kpi panel fade-up stagger-4 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Promedio</p>
+          <p id="kpiAvg" class="mt-3 text-4xl font-black">USD 0,00</p>
+          <span class="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Precio USD</span>
+        </article>
+        <article class="kpi panel fade-up stagger-5 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">BIPA líder</p>
+          <p id="kpiBipaLeader" class="mt-3 text-4xl font-black text-emerald-600">0</p>
+          <span class="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Mejor precio</span>
+        </article>
+        <article class="kpi panel fade-up stagger-5 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Riesgo alto</p>
+          <p id="kpiRisk" class="mt-3 text-4xl font-black text-red-600">0</p>
+          <span class="mt-3 inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">Revisión</span>
+        </article>
+      </section>
+
+      <section class="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">
+        <div class="grid grid-cols-1 gap-5 2xl:grid-cols-2">
+          <article class="panel fade-up rounded-lg p-5">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[.18em] text-blue-600">Ranking</p>
+                <h2 id="priceChartTitle" class="text-xl font-black">Precios por producto</h2>
+              </div>
+              <span id="chartContext" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600"></span>
+            </div>
+            <div class="h-[420px]">
+              <canvas id="priceChart"></canvas>
+            </div>
+          </article>
+
+          <article class="panel fade-up stagger-1 rounded-lg p-5">
+            <div class="mb-5">
+              <p class="text-xs font-black uppercase tracking-[.18em] text-emerald-600">Eficiencia</p>
+              <h2 class="text-xl font-black">Precio por gramo</h2>
+            </div>
+            <div class="h-[420px]">
+              <canvas id="gramChart"></canvas>
+            </div>
+          </article>
+
+          <article class="panel fade-up stagger-2 rounded-lg p-5 2xl:col-span-2">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[.18em] text-violet-600">Competitividad</p>
+                <h2 class="text-xl font-black">Brecha vs precio mínimo de la referencia</h2>
+              </div>
+              <p class="text-sm text-slate-500">0% significa que el producto es el más económico de su referencia.</p>
+            </div>
+            <div class="h-[360px]">
+              <canvas id="gapChart"></canvas>
+            </div>
+          </article>
+        </div>
+
+        <aside class="space-y-5">
+          <article class="panel fade-up stagger-2 rounded-lg p-5">
+            <div class="mb-4">
+              <p class="text-xs font-black uppercase tracking-[.18em] text-amber-600">Insights</p>
+              <h2 class="text-xl font-black">Lectura automática</h2>
+            </div>
+            <div id="insights" class="space-y-3"></div>
+          </article>
+
+          <article class="panel fade-up stagger-3 rounded-lg p-5">
+            <div class="mb-4">
+              <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Distribución</p>
+              <h2 class="text-xl font-black">Estatus competitivo</h2>
+            </div>
+            <div class="h-[260px]">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </article>
+
+          <article class="panel fade-up stagger-4 rounded-lg p-5">
+            <div class="mb-4">
+              <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Calidad de datos</p>
+              <h2 class="text-xl font-black">Alertas</h2>
+            </div>
+            <div id="qualityPanel" class="space-y-3"></div>
+          </article>
+        </aside>
+      </section>
+
+      <section class="panel fade-up mt-5 overflow-hidden rounded-lg">
+        <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Detalle</p>
+            <h2 class="text-xl font-black">Radar operativo</h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="tableCount" class="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">0 registros</span>
+            <span id="priceRange" class="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">USD 0,00 - USD 0,00</span>
+          </div>
+        </div>
+
+        <div class="nice-scroll max-h-[620px] overflow-auto">
+          <table class="min-w-[1280px] w-full border-separate border-spacing-0">
+            <thead class="sticky top-0 z-10 bg-slate-950 text-white">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Cliente</th>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Referencia</th>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Artículo real</th>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Marca</th>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Estado</th>
+                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Peso</th>
+                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Precio</th>
+                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">$/g</th>
+                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Ranking</th>
+                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Brecha mín.</th>
+                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Estatus</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = "TU_URL_DE_APPS_SCRIPT";
+
+    const state = {
+      rawData: [],
+      filteredData: [],
+      viewMode: "referencia",
+      sortKey: "precioUsd",
+      sortDirection: "desc",
+      charts: {}
+    };
+
+    const els = {
+      lastUpdate: document.getElementById("lastUpdate"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      referenceFilter: document.getElementById("referenceFilter"),
+      clientFilter: document.getElementById("clientFilter"),
+      brandFilter: document.getElementById("brandFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      topFilter: document.getElementById("topFilter"),
+      searchInput: document.getElementById("searchInput"),
+      kpiProducts: document.getElementById("kpiProducts"),
+      kpiReferences: document.getElementById("kpiReferences"),
+      kpiClients: document.getElementById("kpiClients"),
+      kpiAvg: document.getElementById("kpiAvg"),
+      kpiBipaLeader: document.getElementById("kpiBipaLeader"),
+      kpiRisk: document.getElementById("kpiRisk"),
+      priceChartTitle: document.getElementById("priceChartTitle"),
+      chartContext: document.getElementById("chartContext"),
+      insights: document.getElementById("insights"),
+      qualityPanel: document.getElementById("qualityPanel"),
+      tableCount: document.getElementById("tableCount"),
+      priceRange: document.getElementById("priceRange"),
+      tableBody: document.getElementById("tableBody")
+    };
 
     document.addEventListener("DOMContentLoaded", init);
 
-    async function init() {
+    function init() {
       bindEvents();
-      await loadData();
+      fillSelect(els.referenceFilter, [], "Todas las referencias");
+      fillSelect(els.clientFilter, [], "Todos los clientes");
+      fillSelect(els.brandFilter, [], "Todas las marcas");
+      fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
+      loadData();
     }
 
     function bindEvents() {
-      viewMode.addEventListener("change", handleViewModeChange);
-      referenceFilter.addEventListener("change", applyFilters);
-      clientFilter.addEventListener("change", applyFilters);
-      brandFilter.addEventListener("change", applyFilters);
-      searchInput.addEventListener("input", applyFilters);
+      document.querySelectorAll(".view-tab").forEach(button => {
+        button.addEventListener("click", () => {
+          state.viewMode = button.dataset.view;
+          document.querySelectorAll(".view-tab").forEach(tab => tab.classList.remove("tab-active"));
+          button.classList.add("tab-active");
+          handleViewMode();
+        });
+      });
+
+      [els.referenceFilter, els.clientFilter, els.brandFilter, els.statusFilter, els.topFilter].forEach(element => {
+        element.addEventListener("change", applyFilters);
+      });
+
+      els.searchInput.addEventListener("input", debounce(applyFilters, 120));
+      els.refreshBtn.addEventListener("click", loadData);
+      els.exportBtn.addEventListener("click", exportCsv);
+      els.clearBtn.addEventListener("click", clearFilters);
     }
 
     async function loadData() {
       try {
-        setLoading(true);
-
-        const response = await fetch(API_URL);
+        setLoading();
+        const response = await fetch(API_URL, { cache: "no-store" });
         const payload = await response.json();
 
         if (!payload.success) {
           throw new Error(payload.message || "Error consultando Apps Script.");
         }
 
-        rawData = Array.isArray(payload.data) ? payload.data : [];
-
-        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
-        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
-        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
-
-        document.getElementById("lastUpdate").textContent =
-          "Última actualización: " + new Date().toLocaleString("es-VE");
-
-        handleViewModeChange();
+        state.rawData = Array.isArray(payload.data) ? payload.data : [];
+        hydrateFilters(payload.filtros || {});
+        els.lastUpdate.textContent = `Actualizado: ${formatDateTime(new Date())}`;
+        handleViewMode();
       } catch (error) {
         console.error(error);
-        renderError("No se pudo cargar la información del radar.");
+        renderError("No se pudo cargar la información. Revisa la URL del Apps Script y los permisos.");
       }
     }
 
-    function handleViewModeChange() {
-      if (viewMode.value === "cliente") {
-        referenceFilter.disabled = true;
-        referenceFilter.value = "";
-        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
-      } else {
-        referenceFilter.disabled = false;
-        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
-      }
+    function hydrateFilters(filters) {
+      fillSelect(els.referenceFilter, filters.referencias || uniqueValues(state.rawData, "referencia"), "Todas las referencias");
+      fillSelect(els.clientFilter, filters.clientes || uniqueValues(state.rawData, "cliente"), "Todos los clientes");
+      fillSelect(els.brandFilter, filters.marcas || uniqueValues(state.rawData, "marca"), "Todas las marcas");
+      fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
+    }
 
+    function handleViewMode() {
+      const isClientMode = state.viewMode === "cliente";
+      els.referenceFilter.disabled = isClientMode;
+      if (isClientMode) els.referenceFilter.value = "";
+      els.priceChartTitle.textContent = isClientMode ? "Radar por cliente" : "Ranking por referencia";
       applyFilters();
     }
 
     function applyFilters() {
-      const mode = viewMode.value;
-      const selectedReference = referenceFilter.value;
-      const selectedClient = clientFilter.value;
-      const selectedBrand = brandFilter.value;
-      const query = normalizeText(searchInput.value);
+      const selectedReference = els.referenceFilter.value;
+      const selectedClient = els.clientFilter.value;
+      const selectedBrand = els.brandFilter.value;
+      const selectedStatus = els.statusFilter.value;
+      const query = normalizeText(els.searchInput.value);
 
-      filteredData = rawData.filter(item => {
-        const matchesReference =
-          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
-
-        const matchesClient =
-          !selectedClient || item.cliente === selectedClient;
-
-        const matchesBrand =
-          !selectedBrand || item.marca === selectedBrand;
-
+      state.filteredData = state.rawData.filter(item => {
+        const matchesReference = state.viewMode === "cliente" || !selectedReference || item.referencia === selectedReference;
+        const matchesClient = !selectedClient || item.cliente === selectedClient;
+        const matchesBrand = !selectedBrand || item.marca === selectedBrand;
+        const matchesStatus = !selectedStatus || item.estatusCompetitivo === selectedStatus;
         const searchable = normalizeText([
           item.cliente,
           item.referencia,
           item.articulo,
           item.marca,
-          item.estado
+          item.estado,
+          item.estatusCompetitivo
         ].join(" "));
 
-        const matchesSearch = !query || searchable.includes(query);
-
-        return matchesReference && matchesClient && matchesBrand && matchesSearch;
+        return matchesReference && matchesClient && matchesBrand && matchesStatus && (!query || searchable.includes(query));
       });
 
-      updateKpis(filteredData);
-      updateCharts(filteredData);
-      renderTable(filteredData);
+      const sorted = state.filteredData.slice().sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0));
+      state.filteredData = sorted;
+
+      updateKpis(sorted);
+      updateInsights(sorted);
+      updateCharts(sorted);
+      renderTable(sorted);
     }
 
     function updateKpis(data) {
-      const prices = data
-        .map(item => Number(item.precioUsd || 0))
-        .filter(price => price > 0);
+      const prices = getPrices(data);
+      const refs = unique(data.map(item => item.referencia));
+      const clients = unique(data.map(item => item.cliente));
 
-      const total = data.length;
-      const avgPrice = prices.length
-        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
-        : 0;
+      animateNumber(els.kpiProducts, data.length, 0);
+      animateNumber(els.kpiReferences, refs.length, 0);
+      animateNumber(els.kpiClients, clients.length, 0);
+      els.kpiAvg.textContent = formatCurrency(average(prices));
+      animateNumber(els.kpiBipaLeader, data.filter(item => item.estatusCompetitivo === "BIPA líder").length, 0);
+      animateNumber(els.kpiRisk, data.filter(item => item.estatusCompetitivo === "Riesgo alto").length, 0);
 
-      const minPrice = prices.length ? Math.min(...prices) : 0;
-      const maxPrice = prices.length ? Math.max(...prices) : 0;
+      const min = prices.length ? Math.min(...prices) : 0;
+      const max = prices.length ? Math.max(...prices) : 0;
+      els.priceRange.textContent = `${formatCurrency(min)} - ${formatCurrency(max)}`;
+    }
 
-      document.getElementById("kpiTotal").textContent = total;
-      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
-      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
-      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
+    function updateInsights(data) {
+      const prices = getPrices(data);
+      const refs = unique(data.map(item => item.referencia));
+      const clients = unique(data.map(item => item.cliente));
+      const bipaLeader = data.filter(item => item.estatusCompetitivo === "BIPA líder").length;
+      const compLeader = data.filter(item => item.estatusCompetitivo === "Competencia líder").length;
+      const risks = data.filter(item => item.estatusCompetitivo === "Riesgo alto").length;
+      const noWeight = data.filter(item => !item.peso || item.precioPorGramo === null).length;
+      const topProduct = data.slice().sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))[0];
+      const cheapest = data.slice().sort((a, b) => Number(a.precioUsd || 0) - Number(b.precioUsd || 0))[0];
+
+      const insightItems = [
+        {
+          tone: "blue",
+          title: `${refs.length} referencias en análisis`,
+          text: `La vista actual cruza ${data.length} productos en ${clients.length} clientes.`
+        },
+        {
+          tone: bipaLeader >= compLeader ? "green" : "amber",
+          title: `${bipaLeader} posiciones con BIPA líder`,
+          text: compLeader ? `La competencia lidera ${compLeader} productos comparables.` : "No hay líderes competidores en esta vista."
+        },
+        {
+          tone: risks ? "red" : "green",
+          title: `${risks} riesgos altos detectados`,
+          text: risks ? "Conviene revisar referencias donde BIPA queda más de 15% sobre el mínimo." : "La vista filtrada no muestra riesgos altos."
+        },
+        {
+          tone: "slate",
+          title: `Rango ${formatCurrency(prices.length ? Math.min(...prices) : 0)} a ${formatCurrency(prices.length ? Math.max(...prices) : 0)}`,
+          text: topProduct ? `Mayor precio: ${topProduct.articulo}. Menor precio: ${cheapest.articulo}.` : "Sin productos para analizar."
+        }
+      ];
+
+      els.insights.innerHTML = insightItems.map(renderInsight).join("");
+
+      els.qualityPanel.innerHTML = [
+        renderQuality("Registros sin peso", noWeight, noWeight ? "red" : "green"),
+        renderQuality("Con precio por gramo", data.length - noWeight, "blue"),
+        renderQuality("Marcas visibles", unique(data.map(item => item.marca)).length, "slate")
+      ].join("");
     }
 
     function updateCharts(data) {
-      const chartData = data
-        .slice()
-        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
-        .slice(0, 25);
+      const limit = Number(els.topFilter.value || 25);
+      const chartData = data.slice(0, limit);
+      const labels = chartData.map(item => truncateLabel(item.articulo, 24));
 
-      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
-
+      els.chartContext.textContent = `${chartData.length} de ${data.length} productos`;
       renderPriceChart(chartData, labels);
       renderGramChart(chartData, labels);
+      renderGapChart(chartData, labels);
+      renderStatusChart(data);
     }
 
     function renderPriceChart(data, labels) {
-      const ctx = document.getElementById("priceChart");
-
-      if (priceChart) priceChart.destroy();
-
-      priceChart = new Chart(ctx, {
+      destroyChart("price");
+      state.charts.price = new Chart(document.getElementById("priceChart"), {
         type: "bar",
         data: {
-          labels: labels,
+          labels,
           datasets: [{
             label: "Precio USD",
             data: data.map(item => Number(item.precioUsd || 0)),
-            backgroundColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgba(37, 99, 235, 0.75)"
-                : "rgba(15, 23, 42, 0.75)"
-            ),
-            borderColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgb(37, 99, 235)"
-                : "rgb(15, 23, 42)"
-            ),
-            borderWidth: 1
+            backgroundColor: data.map(item => brandColor(item.marca, .78)),
+            borderColor: data.map(item => brandColor(item.marca, 1)),
+            borderWidth: 1,
+            borderRadius: 6,
+            maxBarThickness: 34
           }]
         },
-        options: chartOptions(value => formatCurrency(value))
+        options: baseChartOptions(value => formatCurrency(value), true)
       });
     }
 
     function renderGramChart(data, labels) {
-      const ctx = document.getElementById("gramChart");
-
-      if (gramChart) gramChart.destroy();
-
-      gramChart = new Chart(ctx, {
+      destroyChart("gram");
+      state.charts.gram = new Chart(document.getElementById("gramChart"), {
         type: "bar",
         data: {
-          labels: labels,
+          labels,
           datasets: [{
             label: "Precio por gramo",
             data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
-            backgroundColor: "rgba(16, 185, 129, 0.75)",
-            borderColor: "rgb(16, 185, 129)",
-            borderWidth: 1
+            backgroundColor: "rgba(5, 150, 105, .72)",
+            borderColor: "rgba(5, 150, 105, 1)",
+            borderWidth: 1,
+            borderRadius: 6,
+            maxBarThickness: 34
           }]
         },
-        options: chartOptions(value => Number(value).toFixed(4))
+        options: baseChartOptions(value => Number(value || 0).toFixed(4), true)
       });
     }
 
-    function chartOptions(tickFormatter) {
+    function renderGapChart(data, labels) {
+      destroyChart("gap");
+      state.charts.gap = new Chart(document.getElementById("gapChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Brecha vs mínimo",
+            data: data.map(item => Number(item.diferenciaVsMinimoPct || 0)),
+            backgroundColor: data.map(item => gapColor(item.diferenciaVsMinimoPct, .76)),
+            borderColor: data.map(item => gapColor(item.diferenciaVsMinimoPct, 1)),
+            borderWidth: 1,
+            borderRadius: 6,
+            maxBarThickness: 34
+          }]
+        },
+        options: baseChartOptions(value => `${Number(value || 0).toFixed(2)}%`, true)
+      });
+    }
+
+    function renderStatusChart(data) {
+      destroyChart("status");
+      const statuses = getStatuses();
+      const counts = statuses.map(status => data.filter(item => item.estatusCompetitivo === status).length);
+
+      state.charts.status = new Chart(document.getElementById("statusChart"), {
+        type: "doughnut",
+        data: {
+          labels: statuses,
+          datasets: [{
+            data: counts,
+            backgroundColor: [
+              "rgba(5, 150, 105, .82)",
+              "rgba(37, 99, 235, .82)",
+              "rgba(217, 119, 6, .82)",
+              "rgba(220, 38, 38, .82)",
+              "rgba(124, 58, 237, .82)",
+              "rgba(51, 65, 85, .82)",
+              "rgba(15, 23, 42, .82)"
+            ],
+            borderColor: "#fff",
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 850, easing: "easeOutQuart" },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true }
+            }
+          },
+          cutout: "64%"
+        }
+      });
+    }
+
+    function baseChartOptions(tickFormatter, showLegend) {
       return {
         responsive: true,
         maintainAspectRatio: false,
+        animation: { duration: 850, easing: "easeOutQuart" },
+        interaction: { mode: "index", intersect: false },
         plugins: {
           legend: {
-            position: "bottom"
+            display: showLegend,
+            position: "bottom",
+            labels: { boxWidth: 12, boxHeight: 12, usePointStyle: true }
           },
           tooltip: {
+            backgroundColor: "#07111f",
+            padding: 12,
+            cornerRadius: 8,
             callbacks: {
               label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
             }
@@ -1087,31 +715,25 @@
         },
         scales: {
           x: {
-            ticks: {
-              maxRotation: 60,
-              minRotation: 30
-            }
+            grid: { color: "rgba(148, 163, 184, .16)" },
+            ticks: { maxRotation: 60, minRotation: 35, color: "#475569", font: { size: 11 } }
           },
           y: {
             beginAtZero: true,
-            ticks: {
-              callback: tickFormatter
-            }
+            grid: { color: "rgba(148, 163, 184, .22)" },
+            ticks: { color: "#475569", callback: tickFormatter }
           }
         }
       };
     }
 
     function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const tableCount = document.getElementById("tableCount");
-
-      tableCount.textContent = `${data.length} registros`;
+      els.tableCount.textContent = `${data.length} registros`;
 
       if (!data.length) {
-        tableBody.innerHTML = `
+        els.tableBody.innerHTML = `
           <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
+            <td colspan="11" class="px-4 py-12 text-center text-slate-500">
               No hay registros para los filtros seleccionados.
             </td>
           </tr>
@@ -1119,38 +741,144 @@
         return;
       }
 
-      tableBody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
+      els.tableBody.innerHTML = data.map(item => `
+        <tr class="group transition duration-200 hover:bg-blue-50/60">
+          <td class="px-4 py-3 text-sm font-bold text-slate-900">${escapeHtml(item.cliente)}</td>
           <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
-          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">
-            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
+          <td class="max-w-[280px] px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
+          <td class="px-4 py-3 text-sm">${brandBadge(item.marca)}</td>
+          <td class="px-4 py-3 text-sm text-slate-600">${escapeHtml(item.estado || "-")}</td>
+          <td class="px-4 py-3 text-right text-sm text-slate-700">${formatNumber(item.peso)}</td>
+          <td class="px-4 py-3 text-right text-sm font-black text-slate-950">${formatCurrency(item.precioUsd)}</td>
+          <td class="px-4 py-3 text-right text-sm text-slate-700">${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}</td>
+          <td class="px-4 py-3 text-right text-sm font-black text-slate-700">#${item.rankingPrecio || "-"}</td>
+          <td class="px-4 py-3 text-right text-sm font-bold ${Number(item.diferenciaVsMinimoPct || 0) > 15 ? "text-red-600" : "text-emerald-600"}">
+            ${formatPercent(item.diferenciaVsMinimoPct)}
           </td>
+          <td class="px-4 py-3 text-sm">${statusBadge(item.estatusCompetitivo)}</td>
         </tr>
       `).join("");
     }
 
-    function brandBadge(brand) {
-      const isBipa = String(brand || "").toUpperCase() === "BIPA";
-      const cls = isBipa
-        ? "bg-blue-100 text-blue-700"
-        : "bg-slate-100 text-slate-700";
+    function setLoading() {
+      els.tableBody.innerHTML = Array.from({ length: 8 }).map(() => `
+        <tr>
+          <td colspan="11" class="px-4 py-3">
+            <div class="h-10 rounded-md shimmer"></div>
+          </td>
+        </tr>
+      `).join("");
 
-      return `
-        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
-          ${escapeHtml(brand)}
-        </span>
+      els.insights.innerHTML = Array.from({ length: 4 }).map(() => `<div class="h-20 rounded-lg shimmer"></div>`).join("");
+      els.qualityPanel.innerHTML = Array.from({ length: 3 }).map(() => `<div class="h-12 rounded-lg shimmer"></div>`).join("");
+    }
+
+    function renderError(message) {
+      els.tableBody.innerHTML = `
+        <tr>
+          <td colspan="11" class="px-4 py-12 text-center font-bold text-red-600">${escapeHtml(message)}</td>
+        </tr>
       `;
     }
 
-    function fillSelect(select, values, defaultLabel) {
-      select.innerHTML = `<option value="">${defaultLabel}</option>`;
+    function renderInsight(item) {
+      const styles = {
+        blue: "border-blue-200 bg-blue-50 text-blue-700",
+        green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        amber: "border-amber-200 bg-amber-50 text-amber-700",
+        red: "border-red-200 bg-red-50 text-red-700",
+        slate: "border-slate-200 bg-slate-50 text-slate-700"
+      };
 
+      return `
+        <div class="rounded-lg border p-4 ${styles[item.tone] || styles.slate}">
+          <p class="font-black">${escapeHtml(item.title)}</p>
+          <p class="mt-1 text-sm opacity-80">${escapeHtml(item.text)}</p>
+        </div>
+      `;
+    }
+
+    function renderQuality(label, value, tone) {
+      const colors = {
+        red: "text-red-600 bg-red-50",
+        green: "text-emerald-600 bg-emerald-50",
+        blue: "text-blue-600 bg-blue-50",
+        slate: "text-slate-600 bg-slate-100"
+      };
+
+      return `
+        <div class="flex items-center justify-between rounded-lg px-4 py-3 ${colors[tone] || colors.slate}">
+          <span class="text-sm font-bold">${escapeHtml(label)}</span>
+          <span class="text-lg font-black">${value}</span>
+        </div>
+      `;
+    }
+
+    function brandBadge(brand) {
+      const isBipa = normalizeText(brand) === "bipa";
+      const cls = isBipa
+        ? "bg-blue-100 text-blue-700 ring-blue-200"
+        : "bg-slate-100 text-slate-700 ring-slate-200";
+
+      return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${cls}">${escapeHtml(brand || "-")}</span>`;
+    }
+
+    function statusBadge(status) {
+      const map = {
+        "BIPA líder": "bg-emerald-100 text-emerald-700 ring-emerald-200",
+        "Competitivo": "bg-blue-100 text-blue-700 ring-blue-200",
+        "Revisar": "bg-amber-100 text-amber-700 ring-amber-200",
+        "Riesgo alto": "bg-red-100 text-red-700 ring-red-200",
+        "Competencia líder": "bg-violet-100 text-violet-700 ring-violet-200",
+        "Sin BIPA": "bg-slate-100 text-slate-700 ring-slate-200",
+        "Monitorear": "bg-slate-100 text-slate-700 ring-slate-200"
+      };
+
+      return `<span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black ring-1 ${map[status] || map["Monitorear"]}">${escapeHtml(status || "Monitorear")}</span>`;
+    }
+
+    function exportCsv() {
+      const headers = ["Cliente", "Referencia", "Articulo", "Marca", "Estado", "Peso", "Precio USD", "Precio por gramo", "Ranking", "Brecha vs minimo", "Estatus"];
+      const rows = state.filteredData.map(item => [
+        item.cliente,
+        item.referencia,
+        item.articulo,
+        item.marca,
+        item.estado,
+        item.peso,
+        item.precioUsd,
+        item.precioPorGramo,
+        item.rankingPrecio,
+        item.diferenciaVsMinimoPct,
+        item.estatusCompetitivo
+      ]);
+
+      const csv = [headers].concat(rows)
+        .map(row => row.map(value => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `bipa-radar-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function clearFilters() {
+      els.referenceFilter.value = "";
+      els.clientFilter.value = "";
+      els.brandFilter.value = "";
+      els.statusFilter.value = "";
+      els.searchInput.value = "";
+      applyFilters();
+    }
+
+    function fillSelect(select, values, defaultLabel) {
+      select.innerHTML = `<option value="">${escapeHtml(defaultLabel)}</option>`;
       values.forEach(value => {
         const option = document.createElement("option");
         option.value = value;
@@ -1159,34 +887,82 @@
       });
     }
 
+    function getStatuses() {
+      return ["BIPA líder", "Competitivo", "Revisar", "Riesgo alto", "Competencia líder", "Sin BIPA", "Monitorear"];
+    }
+
+    function getPrices(data) {
+      return data.map(item => Number(item.precioUsd || 0)).filter(value => Number.isFinite(value) && value > 0);
+    }
+
+    function average(values) {
+      if (!values.length) return 0;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function unique(values) {
+      const seen = new Set();
+      return values.filter(value => {
+        const clean = String(value || "").trim();
+        const key = normalizeText(clean);
+        if (!clean || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
     function uniqueValues(data, key) {
-      return [...new Set(
-        data
-          .map(item => item[key])
-          .filter(value => String(value || "").trim() !== "")
-      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
+      return unique(data.map(item => item[key])).sort((a, b) => String(a).localeCompare(String(b), "es"));
     }
 
-    function setLoading(isLoading) {
-      if (!isLoading) return;
-
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-            Cargando radar de precios...
-          </td>
-        </tr>
-      `;
+    function brandColor(brand, alpha) {
+      if (normalizeText(brand) === "bipa") return `rgba(37, 99, 235, ${alpha})`;
+      if (normalizeText(brand).includes("patrona")) return `rgba(124, 58, 237, ${alpha})`;
+      if (normalizeText(brand).includes("estrella")) return `rgba(217, 119, 6, ${alpha})`;
+      return `rgba(15, 23, 42, ${alpha})`;
     }
 
-    function renderError(message) {
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-red-600">
-            ${escapeHtml(message)}
-          </td>
-        </tr>
-      `;
+    function gapColor(value, alpha) {
+      const num = Number(value || 0);
+      if (num <= 5) return `rgba(5, 150, 105, ${alpha})`;
+      if (num <= 15) return `rgba(217, 119, 6, ${alpha})`;
+      return `rgba(220, 38, 38, ${alpha})`;
+    }
+
+    function destroyChart(key) {
+      if (state.charts[key]) {
+        state.charts[key].destroy();
+        state.charts[key] = null;
+      }
+    }
+
+    function animateNumber(element, target, decimals) {
+      const start = Number(element.dataset.value || 0);
+      const end = Number(target || 0);
+      const duration = 420;
+      const startedAt = performance.now();
+
+      function tick(now) {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = start + (end - start) * eased;
+        element.textContent = value.toLocaleString("es-VE", {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        });
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+
+      element.dataset.value = String(end);
+      requestAnimationFrame(tick);
+    }
+
+    function debounce(fn, delay) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
     }
 
     function normalizeText(value) {
@@ -1199,7 +975,7 @@
 
     function truncateLabel(value, maxLength) {
       const text = String(value || "");
-      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
+      return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
     }
 
     function formatCurrency(value) {
@@ -1218,690 +994,17 @@
       });
     }
 
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-  </script>
-</body>
-</html>
-
-
-
-
-";
-
-    let rawData = [];
-    let filteredData = [];
-    let priceChart = null;
-    let gramChart = null;
-
-    const viewMode = document.getElementById("viewMode");
-    const referenceFilter = document.getElementById("referenceFilter");
-    const clientFilter = document.getElementById("clientFilter");
-    const brandFilter = document.getElementById("brandFilter");
-    const searchInput = document.getElementById("searchInput");
-
-    document.addEventListener("DOMContentLoaded", init);
-
-    async function init() {
-      bindEvents();
-      await loadData();
+    function formatPercent(value) {
+      return `${Number(value || 0).toFixed(2)}%`;
     }
 
-    function bindEvents() {
-      viewMode.addEventListener("change", handleViewModeChange);
-      referenceFilter.addEventListener("change", applyFilters);
-      clientFilter.addEventListener("change", applyFilters);
-      brandFilter.addEventListener("change", applyFilters);
-      searchInput.addEventListener("input", applyFilters);
-    }
-
-    async function loadData() {
-      try {
-        setLoading(true);
-
-        const response = await fetch(API_URL);
-        const payload = await response.json();
-
-        if (!payload.success) {
-          throw new Error(payload.message || "Error consultando Apps Script.");
-        }
-
-        rawData = Array.isArray(payload.data) ? payload.data : [];
-
-        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
-        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
-        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
-
-        document.getElementById("lastUpdate").textContent =
-          "Última actualización: " + new Date().toLocaleString("es-VE");
-
-        handleViewModeChange();
-      } catch (error) {
-        console.error(error);
-        renderError("No se pudo cargar la información del radar.");
-      }
-    }
-
-    function handleViewModeChange() {
-      if (viewMode.value === "cliente") {
-        referenceFilter.disabled = true;
-        referenceFilter.value = "";
-        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
-      } else {
-        referenceFilter.disabled = false;
-        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
-      }
-
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const mode = viewMode.value;
-      const selectedReference = referenceFilter.value;
-      const selectedClient = clientFilter.value;
-      const selectedBrand = brandFilter.value;
-      const query = normalizeText(searchInput.value);
-
-      filteredData = rawData.filter(item => {
-        const matchesReference =
-          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
-
-        const matchesClient =
-          !selectedClient || item.cliente === selectedClient;
-
-        const matchesBrand =
-          !selectedBrand || item.marca === selectedBrand;
-
-        const searchable = normalizeText([
-          item.cliente,
-          item.referencia,
-          item.articulo,
-          item.marca,
-          item.estado
-        ].join(" "));
-
-        const matchesSearch = !query || searchable.includes(query);
-
-        return matchesReference && matchesClient && matchesBrand && matchesSearch;
-      });
-
-      updateKpis(filteredData);
-      updateCharts(filteredData);
-      renderTable(filteredData);
-    }
-
-    function updateKpis(data) {
-      const prices = data
-        .map(item => Number(item.precioUsd || 0))
-        .filter(price => price > 0);
-
-      const total = data.length;
-      const avgPrice = prices.length
-        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
-        : 0;
-
-      const minPrice = prices.length ? Math.min(...prices) : 0;
-      const maxPrice = prices.length ? Math.max(...prices) : 0;
-
-      document.getElementById("kpiTotal").textContent = total;
-      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
-      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
-      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
-    }
-
-    function updateCharts(data) {
-      const chartData = data
-        .slice()
-        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
-        .slice(0, 25);
-
-      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
-
-      renderPriceChart(chartData, labels);
-      renderGramChart(chartData, labels);
-    }
-
-    function renderPriceChart(data, labels) {
-      const ctx = document.getElementById("priceChart");
-
-      if (priceChart) priceChart.destroy();
-
-      priceChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio USD",
-            data: data.map(item => Number(item.precioUsd || 0)),
-            backgroundColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgba(37, 99, 235, 0.75)"
-                : "rgba(15, 23, 42, 0.75)"
-            ),
-            borderColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgb(37, 99, 235)"
-                : "rgb(15, 23, 42)"
-            ),
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => formatCurrency(value))
-      });
-    }
-
-    function renderGramChart(data, labels) {
-      const ctx = document.getElementById("gramChart");
-
-      if (gramChart) gramChart.destroy();
-
-      gramChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio por gramo",
-            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
-            backgroundColor: "rgba(16, 185, 129, 0.75)",
-            borderColor: "rgb(16, 185, 129)",
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => Number(value).toFixed(4))
-      });
-    }
-
-    function chartOptions(tickFormatter) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom"
-          },
-          tooltip: {
-            callbacks: {
-              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              maxRotation: 60,
-              minRotation: 30
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: tickFormatter
-            }
-          }
-        }
-      };
-    }
-
-    function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const tableCount = document.getElementById("tableCount");
-
-      tableCount.textContent = `${data.length} registros`;
-
-      if (!data.length) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-              No hay registros para los filtros seleccionados.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      tableBody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
-          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">
-            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
-          </td>
-        </tr>
-      `).join("");
-    }
-
-    function brandBadge(brand) {
-      const isBipa = String(brand || "").toUpperCase() === "BIPA";
-      const cls = isBipa
-        ? "bg-blue-100 text-blue-700"
-        : "bg-slate-100 text-slate-700";
-
-      return `
-        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
-          ${escapeHtml(brand)}
-        </span>
-      `;
-    }
-
-    function fillSelect(select, values, defaultLabel) {
-      select.innerHTML = `<option value="">${defaultLabel}</option>`;
-
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    function uniqueValues(data, key) {
-      return [...new Set(
-        data
-          .map(item => item[key])
-          .filter(value => String(value || "").trim() !== "")
-      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
-    }
-
-    function setLoading(isLoading) {
-      if (!isLoading) return;
-
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-            Cargando radar de precios...
-          </td>
-        </tr>
-      `;
-    }
-
-    function renderError(message) {
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-red-600">
-            ${escapeHtml(message)}
-          </td>
-        </tr>
-      `;
-    }
-
-    function normalizeText(value) {
-      return String(value || "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-    }
-
-    function truncateLabel(value, maxLength) {
-      const text = String(value || "");
-      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
-    }
-
-    function formatCurrency(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function formatNumber(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-  </script>
-</body>
-</html>";
-
-    let rawData = [];
-    let filteredData = [];
-    let priceChart = null;
-    let gramChart = null;
-
-    const viewMode = document.getElementById("viewMode");
-    const referenceFilter = document.getElementById("referenceFilter");
-    const clientFilter = document.getElementById("clientFilter");
-    const brandFilter = document.getElementById("brandFilter");
-    const searchInput = document.getElementById("searchInput");
-
-    document.addEventListener("DOMContentLoaded", init);
-
-    async function init() {
-      bindEvents();
-      await loadData();
-    }
-
-    function bindEvents() {
-      viewMode.addEventListener("change", handleViewModeChange);
-      referenceFilter.addEventListener("change", applyFilters);
-      clientFilter.addEventListener("change", applyFilters);
-      brandFilter.addEventListener("change", applyFilters);
-      searchInput.addEventListener("input", applyFilters);
-    }
-
-    async function loadData() {
-      try {
-        setLoading(true);
-
-        const response = await fetch(API_URL);
-        const payload = await response.json();
-
-        if (!payload.success) {
-          throw new Error(payload.message || "Error consultando Apps Script.");
-        }
-
-        rawData = Array.isArray(payload.data) ? payload.data : [];
-
-        fillSelect(referenceFilter, uniqueValues(rawData, "referencia"), "Todas las referencias");
-        fillSelect(clientFilter, uniqueValues(rawData, "cliente"), "Todos los clientes");
-        fillSelect(brandFilter, uniqueValues(rawData, "marca"), "Todas las marcas");
-
-        document.getElementById("lastUpdate").textContent =
-          "Última actualización: " + new Date().toLocaleString("es-VE");
-
-        handleViewModeChange();
-      } catch (error) {
-        console.error(error);
-        renderError("No se pudo cargar la información del radar.");
-      }
-    }
-
-    function handleViewModeChange() {
-      if (viewMode.value === "cliente") {
-        referenceFilter.disabled = true;
-        referenceFilter.value = "";
-        document.getElementById("priceChartTitle").textContent = "Radar por cliente";
-      } else {
-        referenceFilter.disabled = false;
-        document.getElementById("priceChartTitle").textContent = "Productos por referencia";
-      }
-
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const mode = viewMode.value;
-      const selectedReference = referenceFilter.value;
-      const selectedClient = clientFilter.value;
-      const selectedBrand = brandFilter.value;
-      const query = normalizeText(searchInput.value);
-
-      filteredData = rawData.filter(item => {
-        const matchesReference =
-          mode === "cliente" || !selectedReference || item.referencia === selectedReference;
-
-        const matchesClient =
-          !selectedClient || item.cliente === selectedClient;
-
-        const matchesBrand =
-          !selectedBrand || item.marca === selectedBrand;
-
-        const searchable = normalizeText([
-          item.cliente,
-          item.referencia,
-          item.articulo,
-          item.marca,
-          item.estado
-        ].join(" "));
-
-        const matchesSearch = !query || searchable.includes(query);
-
-        return matchesReference && matchesClient && matchesBrand && matchesSearch;
-      });
-
-      updateKpis(filteredData);
-      updateCharts(filteredData);
-      renderTable(filteredData);
-    }
-
-    function updateKpis(data) {
-      const prices = data
-        .map(item => Number(item.precioUsd || 0))
-        .filter(price => price > 0);
-
-      const total = data.length;
-      const avgPrice = prices.length
-        ? prices.reduce((sum, price) => sum + price, 0) / prices.length
-        : 0;
-
-      const minPrice = prices.length ? Math.min(...prices) : 0;
-      const maxPrice = prices.length ? Math.max(...prices) : 0;
-
-      document.getElementById("kpiTotal").textContent = total;
-      document.getElementById("kpiAvgPrice").textContent = formatCurrency(avgPrice);
-      document.getElementById("kpiMinPrice").textContent = formatCurrency(minPrice);
-      document.getElementById("kpiMaxPrice").textContent = formatCurrency(maxPrice);
-    }
-
-    function updateCharts(data) {
-      const chartData = data
-        .slice()
-        .sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))
-        .slice(0, 25);
-
-      const labels = chartData.map(item => truncateLabel(item.articulo, 28));
-
-      renderPriceChart(chartData, labels);
-      renderGramChart(chartData, labels);
-    }
-
-    function renderPriceChart(data, labels) {
-      const ctx = document.getElementById("priceChart");
-
-      if (priceChart) priceChart.destroy();
-
-      priceChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio USD",
-            data: data.map(item => Number(item.precioUsd || 0)),
-            backgroundColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgba(37, 99, 235, 0.75)"
-                : "rgba(15, 23, 42, 0.75)"
-            ),
-            borderColor: data.map(item =>
-              String(item.marca || "").toUpperCase() === "BIPA"
-                ? "rgb(37, 99, 235)"
-                : "rgb(15, 23, 42)"
-            ),
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => formatCurrency(value))
-      });
-    }
-
-    function renderGramChart(data, labels) {
-      const ctx = document.getElementById("gramChart");
-
-      if (gramChart) gramChart.destroy();
-
-      gramChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Precio por gramo",
-            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
-            backgroundColor: "rgba(16, 185, 129, 0.75)",
-            borderColor: "rgb(16, 185, 129)",
-            borderWidth: 1
-          }]
-        },
-        options: chartOptions(value => Number(value).toFixed(4))
-      });
-    }
-
-    function chartOptions(tickFormatter) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom"
-          },
-          tooltip: {
-            callbacks: {
-              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              maxRotation: 60,
-              minRotation: 30
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: tickFormatter
-            }
-          }
-        }
-      };
-    }
-
-    function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const tableCount = document.getElementById("tableCount");
-
-      tableCount.textContent = `${data.length} registros`;
-
-      if (!data.length) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-              No hay registros para los filtros seleccionados.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      tableBody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-sm font-medium text-slate-900">${escapeHtml(item.cliente)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${brandBadge(item.marca)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.estado)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">${formatNumber(item.peso)}</td>
-          <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${formatCurrency(item.precioUsd)}</td>
-          <td class="px-4 py-3 text-sm text-right text-slate-700">
-            ${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}
-          </td>
-        </tr>
-      `).join("");
-    }
-
-    function brandBadge(brand) {
-      const isBipa = String(brand || "").toUpperCase() === "BIPA";
-      const cls = isBipa
-        ? "bg-blue-100 text-blue-700"
-        : "bg-slate-100 text-slate-700";
-
-      return `
-        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${cls}">
-          ${escapeHtml(brand)}
-        </span>
-      `;
-    }
-
-    function fillSelect(select, values, defaultLabel) {
-      select.innerHTML = `<option value="">${defaultLabel}</option>`;
-
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    function uniqueValues(data, key) {
-      return [...new Set(
-        data
-          .map(item => item[key])
-          .filter(value => String(value || "").trim() !== "")
-      )].sort((a, b) => String(a).localeCompare(String(b), "es"));
-    }
-
-    function setLoading(isLoading) {
-      if (!isLoading) return;
-
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-slate-500">
-            Cargando radar de precios...
-          </td>
-        </tr>
-      `;
-    }
-
-    function renderError(message) {
-      document.getElementById("tableBody").innerHTML = `
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-red-600">
-            ${escapeHtml(message)}
-          </td>
-        </tr>
-      `;
-    }
-
-    function normalizeText(value) {
-      return String(value || "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-    }
-
-    function truncateLabel(value, maxLength) {
-      const text = String(value || "");
-      return text.length > maxLength ? text.slice(0, maxLength - 1) + "..." : text;
-    }
-
-    function formatCurrency(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function formatNumber(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+    function formatDateTime(date) {
+      return date.toLocaleString("es-VE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
       });
     }
 
