@@ -10,1091 +10,777 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Arial"]
-          },
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Arial"] },
+          colors: { ink: "#08111f", signal: "#2f6fed", mint: "#00a878", danger: "#e03131" },
           boxShadow: {
-            glow: "0 22px 80px rgba(28, 75, 140, 0.18)",
-            soft: "0 16px 44px rgba(20, 31, 51, 0.10)"
+            panel: "0 16px 42px rgba(15,23,42,.10)",
+            glow: "0 0 0 1px rgba(255,255,255,.7), 0 24px 80px rgba(47,111,237,.18)"
           }
         }
       }
     };
   </script>
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
     :root {
-      --ink: #07111f;
-      --muted: #64748b;
-      --line: rgba(148, 163, 184, 0.28);
-      --panel: rgba(255, 255, 255, 0.82);
-      --blue: #2563eb;
-      --green: #059669;
-      --red: #dc2626;
+      --bg: #edf3f8;
+      --surface: rgba(255,255,255,.88);
+      --surface-strong: rgba(255,255,255,.96);
+      --line: rgba(97,116,143,.22);
+      --ink: #08111f;
+      --muted: #65748a;
+      --blue: #2f6fed;
+      --green: #00a878;
+      --red: #e03131;
       --amber: #d97706;
       --violet: #7c3aed;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 14% 8%, rgba(37, 99, 235, 0.14), transparent 32%),
-        radial-gradient(circle at 92% 12%, rgba(5, 150, 105, 0.12), transparent 28%),
-        linear-gradient(135deg, #eef4fb 0%, #f8fafc 44%, #eef6f1 100%);
+      margin: 0;
       color: var(--ink);
+      background:
+        linear-gradient(120deg, rgba(47,111,237,.12), transparent 38%),
+        linear-gradient(300deg, rgba(0,168,120,.14), transparent 32%),
+        radial-gradient(circle at 50% -10%, rgba(8,17,31,.10), transparent 36%),
+        var(--bg);
+      overflow-x: hidden;
     }
-
+    .app-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 22px;
+      color: white;
+      background: linear-gradient(180deg, rgba(8,17,31,.98), rgba(20,27,45,.96));
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+    .main { min-width: 0; padding: 24px; }
     .glass {
-      background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.78);
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.72);
+      box-shadow: 0 18px 50px rgba(15,23,42,.09);
       backdrop-filter: blur(18px);
-      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
     }
-
     .panel {
-      background: rgba(255, 255, 255, 0.90);
+      background: var(--surface-strong);
       border: 1px solid var(--line);
-      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+      box-shadow: 0 14px 36px rgba(15,23,42,.07);
     }
-
-    .fade-up {
-      animation: fadeUp 0.68s cubic-bezier(.2, .8, .2, 1) both;
-    }
-
-    .stagger-1 { animation-delay: .04s; }
-    .stagger-2 { animation-delay: .08s; }
-    .stagger-3 { animation-delay: .12s; }
-    .stagger-4 { animation-delay: .16s; }
-    .stagger-5 { animation-delay: .20s; }
-
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(16px) scale(.985);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .pulse-dot {
+    .tile {
       position: relative;
+      overflow: hidden;
+      transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
     }
-
-    .pulse-dot::after {
+    .tile::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(47,111,237,.12), transparent 42%);
+      opacity: 0;
+      transition: opacity .24s ease;
+      pointer-events: none;
+    }
+    .tile:hover { transform: translateY(-3px); box-shadow: 0 26px 70px rgba(15,23,42,.14); border-color: rgba(47,111,237,.24); }
+    .tile:hover::before { opacity: 1; }
+    .field {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 10px;
+      border: 1px solid rgba(100,116,139,.26);
+      background: rgba(255,255,255,.9);
+      padding: 0 12px;
+      outline: none;
+      color: var(--ink);
+      transition: box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .field:focus { border-color: rgba(47,111,237,.78); box-shadow: 0 0 0 4px rgba(47,111,237,.13); background: white; }
+    .field:disabled { opacity: .48; cursor: not-allowed; }
+    .btn { min-height: 44px; border-radius: 10px; padding: 0 16px; font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .tab {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 10px;
+      padding: 12px;
+      color: rgba(255,255,255,.66);
+      font-weight: 800;
+      transition: background .2s ease, color .2s ease;
+    }
+    .tab:hover { background: rgba(255,255,255,.08); color: white; }
+    .fade-up { animation: fadeUp .62s cubic-bezier(.2,.8,.2,1) both; }
+    .delay-1 { animation-delay: .04s; } .delay-2 { animation-delay: .08s; } .delay-3 { animation-delay: .12s; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .pulse { position: relative; display: inline-block; }
+    .pulse::after {
       content: "";
       position: absolute;
       inset: -5px;
       border-radius: 999px;
-      border: 1px solid rgba(5, 150, 105, .42);
+      border: 1px solid rgba(0,168,120,.48);
       animation: ping 1.6s ease-out infinite;
     }
-
-    @keyframes ping {
-      from {
-        opacity: .75;
-        transform: scale(.7);
-      }
-      to {
-        opacity: 0;
-        transform: scale(1.8);
-      }
+    @keyframes ping { from { opacity: .85; transform: scale(.7); } to { opacity: 0; transform: scale(1.8); } }
+    .shimmer { background: linear-gradient(90deg, #e8eef6 25%, #f8fbff 40%, #e8eef6 63%); background-size: 400% 100%; animation: shimmer 1.15s ease-in-out infinite; }
+    @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+    .table-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .table-scroll::-webkit-scrollbar-track { background: #edf2f7; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #c6d1df; border-radius: 999px; }
+    [data-tip] { position: relative; cursor: help; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      z-index: 50;
+      width: min(320px, 80vw);
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #08111f;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.45;
+      box-shadow: 0 18px 45px rgba(8,17,31,.28);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 8px);
+      transition: opacity .18s ease, transform .18s ease;
     }
-
-    .shimmer {
-      background: linear-gradient(90deg, #edf2f7 25%, #f8fafc 38%, #edf2f7 63%);
-      background-size: 400% 100%;
-      animation: shimmer 1.2s ease-in-out infinite;
+    [data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); }
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(8,17,31,.42);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease;
     }
-
-    @keyframes shimmer {
-      0% { background-position: 100% 0; }
-      100% { background-position: 0 0; }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .calc-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 90;
+      width: min(620px, 100vw);
+      height: 100vh;
+      overflow-y: auto;
+      background: #f8fafc;
+      box-shadow: -32px 0 90px rgba(8,17,31,.24);
+      transform: translateX(105%);
+      transition: transform .28s cubic-bezier(.2,.8,.2,1);
     }
-
-    .nice-scroll::-webkit-scrollbar {
-      height: 10px;
-      width: 10px;
-    }
-
-    .nice-scroll::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 999px;
-    }
-
-    .nice-scroll::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-
-    .field {
-      height: 44px;
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid rgba(148, 163, 184, .42);
-      background: rgba(255, 255, 255, .84);
-      padding: 0 12px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-    }
-
-    .field:focus {
-      border-color: rgba(37, 99, 235, .78);
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
-    }
-
-    .field:disabled {
-      opacity: .48;
-      cursor: not-allowed;
-    }
-
-    .tab-active {
-      background: #07111f;
-      color: #fff;
-      box-shadow: 0 8px 24px rgba(7, 17, 31, .22);
+    .calc-drawer.open { transform: translateX(0); }
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .main { padding: 16px; }
     }
   </style>
 </head>
-
 <body>
-  <div class="min-h-screen">
-    <header class="sticky top-0 z-40 border-b border-white/70 bg-white/72 backdrop-blur-xl">
-      <div class="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div class="flex items-center gap-4">
-            <div class="grid h-12 w-12 place-items-center rounded-lg bg-slate-950 text-lg font-black text-white shadow-soft">
-              BI
-            </div>
-            <div>
-              <div class="flex flex-wrap items-center gap-3">
-                <h1 class="text-2xl font-black tracking-tight sm:text-3xl">BIPA Radar Intelligence</h1>
-                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
-                  <span class="pulse-dot h-2 w-2 rounded-full bg-emerald-500"></span>
-                  Conectado
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-slate-500">
-                Inteligencia de precios por referencia, cliente, marca y artículo real.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-            <button id="refreshBtn" class="rounded-lg bg-slate-950 px-4 py-2 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-slate-800">
-              Actualizar
-            </button>
-            <button id="exportBtn" class="rounded-lg bg-white px-4 py-2 font-bold text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-slate-300">
-              Exportar CSV
-            </button>
-            <span id="lastUpdate" class="rounded-lg bg-white/70 px-3 py-2 ring-1 ring-slate-200">Sin actualizar</span>
-          </div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="flex items-center gap-3">
+        <div class="grid h-12 w-12 place-items-center rounded-xl bg-white text-xl font-black text-slate-950">BI</div>
+        <div>
+          <p class="text-lg font-black leading-tight">BIPA Radar</p>
+          <p class="text-xs font-bold uppercase tracking-[.22em] text-white/45">Intelligence OS</p>
         </div>
       </div>
-    </header>
-
-    <main class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
-      <section class="glass fade-up rounded-lg p-4">
-        <div class="flex flex-col gap-4 2xl:flex-row 2xl:items-end">
-          <div class="min-w-[260px]">
-            <p class="mb-2 text-xs font-black uppercase tracking-[.18em] text-slate-500">Modo de análisis</p>
-            <div class="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
-              <button class="view-tab tab-active rounded-md px-3 py-2 text-sm font-black transition" data-view="referencia">Referencia</button>
-              <button class="view-tab rounded-md px-3 py-2 text-sm font-black text-slate-600 transition hover:bg-white" data-view="cliente">Cliente</button>
-            </div>
-          </div>
-
-          <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Referencia</span>
-              <select id="referenceFilter" class="field"></select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Cliente</span>
-              <select id="clientFilter" class="field"></select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Marca</span>
-              <select id="brandFilter" class="field"></select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Estatus</span>
-              <select id="statusFilter" class="field"></select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Top gráfico</span>
-              <select id="topFilter" class="field">
-                <option value="10">Top 10</option>
-                <option value="25" selected>Top 25</option>
-                <option value="50">Top 50</option>
-                <option value="9999">Todos</option>
-              </select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-bold text-slate-500">Buscar</span>
-              <input id="searchInput" class="field" type="search" placeholder="Artículo, cliente..." />
-            </label>
-          </div>
-
-          <button id="clearBtn" class="h-11 rounded-lg bg-white px-4 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-blue-200">
-            Limpiar
-          </button>
+      <div class="mt-8 rounded-2xl border border-white/10 bg-white/[.06] p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-black uppercase tracking-[.18em] text-white/45">Estado</span>
+          <span class="flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200">
+            <span class="pulse h-2 w-2 rounded-full bg-emerald-300"></span> Online
+          </span>
         </div>
-      </section>
+        <p id="sidebarUpdate" class="mt-4 text-sm font-semibold text-white/70">Esperando datos...</p>
+      </div>
+      <nav class="mt-8 space-y-2">
+        <button class="tab" data-section="overview"><span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10">01</span>Command Center</button>
+        <button class="tab" data-section="references"><span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10">02</span>Referencias</button>
+        <button class="tab" data-section="clients"><span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10">03</span>Clientes</button>
+        <button class="tab" data-section="operations"><span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10">04</span>Operativo</button>
+      </nav>
+      <div class="mt-8 rounded-2xl border border-white/10 bg-white/[.04] p-4">
+        <p class="text-xs font-black uppercase tracking-[.18em] text-white/45">Lectura estratégica</p>
+        <p id="sidebarBrief" class="mt-3 text-sm leading-6 text-white/72">La lectura es desde BIPA: nuestras referencias comparan artículos BIPA contra competidores.</p>
+      </div>
+    </aside>
 
-      <section class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <article class="kpi panel fade-up stagger-1 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Productos</p>
-          <p id="kpiProducts" class="mt-3 text-4xl font-black">0</p>
-          <span class="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">Registros filtrados</span>
-        </article>
-        <article class="kpi panel fade-up stagger-2 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Referencias</p>
-          <p id="kpiReferences" class="mt-3 text-4xl font-black">0</p>
-          <span class="mt-3 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">Comparables</span>
-        </article>
-        <article class="kpi panel fade-up stagger-3 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Clientes</p>
-          <p id="kpiClients" class="mt-3 text-4xl font-black">0</p>
-          <span class="mt-3 inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-700">Cobertura</span>
-        </article>
-        <article class="kpi panel fade-up stagger-4 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Promedio</p>
-          <p id="kpiAvg" class="mt-3 text-4xl font-black">USD 0,00</p>
-          <span class="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Precio USD</span>
-        </article>
-        <article class="kpi panel fade-up stagger-5 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">BIPA líder</p>
-          <p id="kpiBipaLeader" class="mt-3 text-4xl font-black text-emerald-600">0</p>
-          <span class="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Mejor precio</span>
-        </article>
-        <article class="kpi panel fade-up stagger-5 rounded-lg p-5 transition hover:-translate-y-1 hover:shadow-glow">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Riesgo alto</p>
-          <p id="kpiRisk" class="mt-3 text-4xl font-black text-red-600">0</p>
-          <span class="mt-3 inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">Revisión</span>
-        </article>
-      </section>
-
-      <section class="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">
-        <div class="grid grid-cols-1 gap-5 2xl:grid-cols-2">
-          <article class="panel fade-up rounded-lg p-5">
-            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p class="text-xs font-black uppercase tracking-[.18em] text-blue-600">Ranking</p>
-                <h2 id="priceChartTitle" class="text-xl font-black">Precios por producto</h2>
-              </div>
-              <span id="chartContext" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600"></span>
-            </div>
-            <div class="h-[420px]">
-              <canvas id="priceChart"></canvas>
-            </div>
-          </article>
-
-          <article class="panel fade-up stagger-1 rounded-lg p-5">
-            <div class="mb-5">
-              <p class="text-xs font-black uppercase tracking-[.18em] text-emerald-600">Eficiencia</p>
-              <h2 class="text-xl font-black">Precio por gramo</h2>
-            </div>
-            <div class="h-[420px]">
-              <canvas id="gramChart"></canvas>
-            </div>
-          </article>
-
-          <article class="panel fade-up stagger-2 rounded-lg p-5 2xl:col-span-2">
-            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p class="text-xs font-black uppercase tracking-[.18em] text-violet-600">Competitividad</p>
-                <h2 class="text-xl font-black">Brecha vs precio mínimo de la referencia</h2>
-              </div>
-              <p class="text-sm text-slate-500">0% significa que el producto es el más económico de su referencia.</p>
-            </div>
-            <div class="h-[360px]">
-              <canvas id="gapChart"></canvas>
-            </div>
-          </article>
-        </div>
-
-        <aside class="space-y-5">
-          <article class="panel fade-up stagger-2 rounded-lg p-5">
-            <div class="mb-4">
-              <p class="text-xs font-black uppercase tracking-[.18em] text-amber-600">Insights</p>
-              <h2 class="text-xl font-black">Lectura automática</h2>
-            </div>
-            <div id="insights" class="space-y-3"></div>
-          </article>
-
-          <article class="panel fade-up stagger-3 rounded-lg p-5">
-            <div class="mb-4">
-              <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Distribución</p>
-              <h2 class="text-xl font-black">Estatus competitivo</h2>
-            </div>
-            <div class="h-[260px]">
-              <canvas id="statusChart"></canvas>
-            </div>
-          </article>
-
-          <article class="panel fade-up stagger-4 rounded-lg p-5">
-            <div class="mb-4">
-              <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Calidad de datos</p>
-              <h2 class="text-xl font-black">Alertas</h2>
-            </div>
-            <div id="qualityPanel" class="space-y-3"></div>
-          </article>
-        </aside>
-      </section>
-
-      <section class="panel fade-up mt-5 overflow-hidden rounded-lg">
-        <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+    <main class="main">
+      <header class="glass fade-up rounded-2xl p-5">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Detalle</p>
-            <h2 class="text-xl font-black">Radar operativo</h2>
+            <p class="text-xs font-black uppercase tracking-[.22em] text-blue-700">Pricing intelligence dashboard</p>
+            <h1 class="mt-1 text-3xl font-black tracking-tight md:text-5xl">BIPA Radar Intelligence</h1>
+            <p class="mt-2 max-w-3xl text-sm font-medium text-slate-600 md:text-base">
+              Vista ejecutiva desde BIPA: cada referencia representa un producto BIPA y compara nuestros artículos contra las marcas competidoras levantadas en cada cliente.
+            </p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span id="tableCount" class="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">0 registros</span>
-            <span id="priceRange" class="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">USD 0,00 - USD 0,00</span>
+          <div class="flex flex-wrap gap-2">
+            <button id="refreshBtn" class="btn bg-slate-950 text-white shadow-panel">Actualizar</button>
+            <button id="calculatorBtn" class="btn bg-blue-600 text-white shadow-panel" data-tip="Abre una calculadora para estimar precio por kilo del producto terminado y costo probable de parafina según margen gerencial.">Calculadora</button>
+            <button id="exportBtn" class="btn bg-white text-slate-700 ring-1 ring-slate-200">Exportar CSV</button>
+            <span id="lastUpdate" class="grid min-h-11 place-items-center rounded-xl bg-white px-4 text-sm font-bold text-slate-500 ring-1 ring-slate-200">Sin actualizar</span>
           </div>
         </div>
+      </header>
 
-        <div class="nice-scroll max-h-[620px] overflow-auto">
-          <table class="min-w-[1280px] w-full border-separate border-spacing-0">
-            <thead class="sticky top-0 z-10 bg-slate-950 text-white">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Cliente</th>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Referencia</th>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Artículo real</th>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Marca</th>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Estado</th>
-                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Peso</th>
-                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Precio</th>
-                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">$/g</th>
-                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Ranking</th>
-                <th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Brecha mín.</th>
-                <th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Estatus</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="divide-y divide-slate-100 bg-white"></tbody>
-          </table>
+      <section class="glass fade-up delay-1 mt-5 rounded-2xl p-4">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+          <div class="xl:col-span-2">
+            <span class="mb-1 block text-xs font-black uppercase tracking-[.16em] text-slate-500">Modo</span>
+            <div class="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+              <button class="mode-btn rounded-lg px-4 py-3 text-sm font-black transition" data-view="referencia">Referencia</button>
+              <button class="mode-btn rounded-lg px-4 py-3 text-sm font-black transition" data-view="cliente">Cliente</button>
+            </div>
+          </div>
+          <label><span class="mb-1 block text-xs font-black text-slate-500">Referencia</span><select id="referenceFilter" class="field"></select></label>
+          <label><span class="mb-1 block text-xs font-black text-slate-500">Cliente</span><select id="clientFilter" class="field"></select></label>
+          <label><span class="mb-1 block text-xs font-black text-slate-500">Marca</span><select id="brandFilter" class="field"></select></label>
+          <label><span class="mb-1 block text-xs font-black text-slate-500">Estatus</span><select id="statusFilter" class="field"></select></label>
+          <label><span class="mb-1 block text-xs font-black text-slate-500">Buscar</span><input id="searchInput" class="field" type="search" placeholder="Producto, cliente..." /></label>
         </div>
+        <div class="mt-3 grid gap-3 md:grid-cols-[1fr_180px_180px]">
+          <label>
+            <span class="mb-1 block text-xs font-black text-slate-500">Top visual</span>
+            <select id="topFilter" class="field"><option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="50">Top 50</option><option value="9999">Todos</option></select>
+          </label>
+          <button id="clearBtn" class="btn mt-5 bg-white text-slate-700 ring-1 ring-slate-200">Limpiar</button>
+          <button id="focusRiskBtn" class="btn mt-5 bg-red-600 text-white shadow-panel">Ver riesgos</button>
+        </div>
+      </section>
+
+      <section id="overview" class="mt-5">
+        <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-6">
+          <article class="tile panel fade-up rounded-2xl p-5" data-tip="Cantidad de productos consolidados visibles. Si el mismo artículo aparece repetido, se conserva el precio mayor."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Productos</p><p id="kpiProducts" class="mt-3 text-4xl font-black">0</p><div class="mt-4 h-2 rounded-full bg-slate-100"><div id="barProducts" class="h-2 rounded-full bg-blue-600"></div></div></article>
+          <article class="tile panel fade-up delay-1 rounded-2xl p-5" data-tip="Número de referencias BIPA en análisis. La referencia es el nombre base usado para agrupar productos comparables."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Referencias BIPA</p><p id="kpiReferences" class="mt-3 text-4xl font-black">0</p><p class="mt-4 text-sm font-bold text-slate-500">Universo comparable</p></article>
+          <article class="tile panel fade-up delay-1 rounded-2xl p-5" data-tip="Cantidad de clientes donde hay levantamientos visibles con los filtros actuales."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Clientes</p><p id="kpiClients" class="mt-3 text-4xl font-black">0</p><p class="mt-4 text-sm font-bold text-slate-500">Cobertura comercial</p></article>
+          <article class="tile panel fade-up delay-2 rounded-2xl p-5" data-tip="Promedio del precio USD de los productos visibles, incluyendo BIPA y competidores."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Precio promedio</p><p id="kpiAvg" class="mt-3 text-4xl font-black">USD 0,00</p><p id="kpiRange" class="mt-4 text-sm font-bold text-slate-500">Rango USD 0,00</p></article>
+          <article class="tile panel fade-up delay-2 rounded-2xl p-5" data-tip="Casos donde el artículo BIPA tiene precio igual o menor que el competidor más barato de esa referencia."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">BIPA líder</p><p id="kpiBipaLeader" class="mt-3 text-4xl font-black text-emerald-600">0</p><p id="kpiBipaLeaderPct" class="mt-4 text-sm font-bold text-emerald-700">0% de productos</p></article>
+          <article class="tile panel fade-up delay-3 rounded-2xl p-5" data-tip="Casos donde BIPA está más de 15% por encima del competidor más barato de la misma referencia."><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Riesgo BIPA</p><p id="kpiRisk" class="mt-3 text-4xl font-black text-red-600">0</p><p id="kpiRiskPct" class="mt-4 text-sm font-bold text-red-700">0% de productos</p></article>
+        </div>
+        <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <article class="panel rounded-2xl p-5">
+            <div class="mb-5 flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-blue-700">Ranking BIPA vs competencia</p><h2 id="priceChartTitle" class="text-2xl font-black">Precios por producto</h2><p class="mt-1 text-sm font-semibold text-slate-500">Azul identifica BIPA. Los demás colores representan marcas competidoras dentro de la misma referencia.</p></div><span id="chartContext" class="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600"></span></div>
+            <div class="h-[460px]"><canvas id="priceChart"></canvas></div>
+          </article>
+          <aside class="space-y-5">
+            <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-amber-600">Inteligencia automática</p><h2 class="mt-1 text-2xl font-black">Lectura ejecutiva</h2><div id="insights" class="mt-5 space-y-3"></div></article>
+            <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Distribución</p><h2 class="mt-1 text-2xl font-black">Estatus competitivo</h2><div class="mt-4 h-[270px]"><canvas id="statusChart"></canvas></div></article>
+          </aside>
+        </div>
+      </section>
+
+      <section id="references" class="mt-5">
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-violet-700">Brecha BIPA</p><h2 class="mt-1 text-2xl font-black">Distancia contra el competidor más barato</h2><p class="mt-1 text-sm font-semibold text-slate-500">Para BIPA mide cuánto estamos por encima o por debajo del menor competidor. Para competidores muestra su distancia frente a BIPA.</p><div class="mt-4 h-[420px]"><canvas id="gapChart"></canvas></div></article>
+          <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Mapa de oportunidades</p><h2 class="mt-1 text-2xl font-black">Referencias críticas</h2><div id="referenceMatrix" class="mt-5 space-y-3"></div></article>
+        </div>
+      </section>
+
+      <section id="clients" class="mt-5">
+        <div class="grid gap-5 xl:grid-cols-2">
+          <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-emerald-700">Eficiencia</p><h2 class="mt-1 text-2xl font-black">Precio por gramo</h2><div class="mt-4 h-[420px]"><canvas id="gramChart"></canvas></div></article>
+          <article class="panel rounded-2xl p-5"><p class="text-xs font-black uppercase tracking-[.18em] text-blue-700">Leaderboard</p><h2 class="mt-1 text-2xl font-black">Clientes y marcas</h2><div class="mt-5 grid gap-4 lg:grid-cols-2"><div><h3 class="text-sm font-black uppercase tracking-[.16em] text-slate-500">Clientes</h3><div id="clientBoard" class="mt-3 space-y-2"></div></div><div><h3 class="text-sm font-black uppercase tracking-[.16em] text-slate-500">Marcas</h3><div id="brandBoard" class="mt-3 space-y-2"></div></div></div></article>
+        </div>
+      </section>
+
+      <section id="operations" class="mt-5">
+        <article class="panel overflow-hidden rounded-2xl">
+          <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 xl:flex-row xl:items-center xl:justify-between"><div><p class="text-xs font-black uppercase tracking-[.18em] text-slate-500">Data room</p><h2 class="text-2xl font-black">Radar operativo consolidado</h2></div><div class="flex flex-wrap gap-2"><span id="tableCount" class="rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-600">0 registros</span><span id="qualityBadge" class="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-blue-700">Calidad pendiente</span></div></div>
+          <div class="table-scroll max-h-[680px] overflow-auto">
+            <table class="min-w-[1320px] w-full border-separate border-spacing-0">
+              <thead class="sticky top-0 z-10 bg-slate-950 text-white"><tr><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Cliente</th><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Referencia BIPA</th><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Artículo real</th><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Marca</th><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Estado</th><th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Peso</th><th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Precio</th><th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">$/g</th><th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Ranking</th><th class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Brecha BIPA</th><th class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Lectura</th></tr></thead>
+              <tbody id="tableBody" class="bg-white"></tbody>
+            </table>
+          </div>
+        </article>
       </section>
     </main>
   </div>
 
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+  <aside id="calcDrawer" class="calc-drawer">
+    <div class="border-b border-slate-200 bg-white px-6 py-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-black uppercase tracking-[.2em] text-blue-700">Herramienta gerencial</p>
+          <h2 class="mt-1 text-3xl font-black text-slate-950">Calculadora de Parafina</h2>
+          <p class="mt-2 text-sm font-semibold leading-6 text-slate-600">
+            Selecciona cualquier artículo del radar y estima el costo implícito de la parafina usando el porcentaje de margen que defina gerencia.
+          </p>
+        </div>
+        <button id="closeCalcBtn" class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-xl font-black text-slate-700">×</button>
+      </div>
+    </div>
+
+    <div class="space-y-5 p-6">
+      <section class="panel rounded-2xl p-5">
+        <label>
+          <span class="mb-2 block text-xs font-black uppercase tracking-[.16em] text-slate-500">Artículo a calcular</span>
+          <select id="calcProductSelect" class="field"></select>
+        </label>
+        <div id="calcProductCard" class="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          Selecciona un artículo para iniciar el cálculo.
+        </div>
+      </section>
+
+      <section class="panel rounded-2xl p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Margen estimado</p>
+            <p class="mt-1 text-sm font-semibold text-slate-600">Porcentaje de sobreprecio estimado sobre el costo de materia prima.</p>
+          </div>
+          <div class="text-right">
+            <input id="calcMarginInput" class="field w-28 text-right text-lg font-black" type="number" min="0" max="500" step="1" value="50" />
+          </div>
+        </div>
+        <input id="calcMarginRange" class="mt-5 w-full accent-blue-600" type="range" min="0" max="150" step="1" value="50" />
+        <div class="mt-4 grid grid-cols-4 gap-2">
+          <button class="marginPreset rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-700" data-margin="30">30%</button>
+          <button class="marginPreset rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-700" data-margin="40">40%</button>
+          <button class="marginPreset rounded-xl bg-slate-950 px-3 py-2 text-sm font-black text-white" data-margin="50">50%</button>
+          <button class="marginPreset rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-700" data-margin="60">60%</button>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <article class="panel rounded-2xl p-5" data-tip="Precio del artículo dividido entre su peso en kilos. Ejemplo: USD 2 / 0,15 kg = USD 13,33 por kg.">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Producto terminado</p>
+          <p id="calcFinishedKg" class="mt-3 text-3xl font-black text-slate-950">-</p>
+          <p class="mt-2 text-sm font-semibold text-slate-500">Precio de venta por kg</p>
+        </article>
+        <article class="panel rounded-2xl p-5" data-tip="Estimación inversa: precio por kg terminado dividido entre 1 + margen porcentual.">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Parafina estimada</p>
+          <p id="calcParaffinKg" class="mt-3 text-3xl font-black text-blue-700">-</p>
+          <p class="mt-2 text-sm font-semibold text-slate-500">Costo estimado por kg</p>
+        </article>
+        <article class="panel rounded-2xl p-5">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Saco 25 kg</p>
+          <p id="calcBag25" class="mt-3 text-3xl font-black text-emerald-700">-</p>
+          <p class="mt-2 text-sm font-semibold text-slate-500">Parafina estimada</p>
+        </article>
+        <article class="panel rounded-2xl p-5">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Saco 50 kg</p>
+          <p id="calcBag50" class="mt-3 text-3xl font-black text-emerald-700">-</p>
+          <p class="mt-2 text-sm font-semibold text-slate-500">Parafina estimada</p>
+        </article>
+      </section>
+
+      <section class="panel rounded-2xl p-5">
+        <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Comparación dentro de la referencia BIPA</p>
+        <div id="calcComparison" class="mt-4 space-y-3"></div>
+      </section>
+
+      <section class="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm font-semibold leading-6 text-blue-900">
+        <p class="font-black">Fórmula usada</p>
+        <p class="mt-2">Precio por kg terminado = precio USD / (peso gramos / 1000).</p>
+        <p>Costo estimado parafina/kg = precio por kg terminado / (1 + margen % / 100).</p>
+      </section>
+    </div>
+  </aside>
+
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwycZgsp_f0XLRzoBo0LUMpHM4BwSEENsNaDyy5SZlBaCTwFwPRdRgSSliNPAmli8jZHg/exec";
-
-    const state = {
-      rawData: [],
-      filteredData: [],
-      viewMode: "referencia",
-      sortKey: "precioUsd",
-      sortDirection: "desc",
-      charts: {}
-    };
-
+    const state = { rawData: [], filteredData: [], viewMode: "referencia", charts: {} };
+    const $ = id => document.getElementById(id);
     const els = {
-      lastUpdate: document.getElementById("lastUpdate"),
-      refreshBtn: document.getElementById("refreshBtn"),
-      exportBtn: document.getElementById("exportBtn"),
-      clearBtn: document.getElementById("clearBtn"),
-      referenceFilter: document.getElementById("referenceFilter"),
-      clientFilter: document.getElementById("clientFilter"),
-      brandFilter: document.getElementById("brandFilter"),
-      statusFilter: document.getElementById("statusFilter"),
-      topFilter: document.getElementById("topFilter"),
-      searchInput: document.getElementById("searchInput"),
-      kpiProducts: document.getElementById("kpiProducts"),
-      kpiReferences: document.getElementById("kpiReferences"),
-      kpiClients: document.getElementById("kpiClients"),
-      kpiAvg: document.getElementById("kpiAvg"),
-      kpiBipaLeader: document.getElementById("kpiBipaLeader"),
-      kpiRisk: document.getElementById("kpiRisk"),
-      priceChartTitle: document.getElementById("priceChartTitle"),
-      chartContext: document.getElementById("chartContext"),
-      insights: document.getElementById("insights"),
-      qualityPanel: document.getElementById("qualityPanel"),
-      tableCount: document.getElementById("tableCount"),
-      priceRange: document.getElementById("priceRange"),
-      tableBody: document.getElementById("tableBody")
+      lastUpdate: $("lastUpdate"), sidebarUpdate: $("sidebarUpdate"), sidebarBrief: $("sidebarBrief"), refreshBtn: $("refreshBtn"), calculatorBtn: $("calculatorBtn"), exportBtn: $("exportBtn"), clearBtn: $("clearBtn"), focusRiskBtn: $("focusRiskBtn"),
+      referenceFilter: $("referenceFilter"), clientFilter: $("clientFilter"), brandFilter: $("brandFilter"), statusFilter: $("statusFilter"), topFilter: $("topFilter"), searchInput: $("searchInput"),
+      kpiProducts: $("kpiProducts"), kpiReferences: $("kpiReferences"), kpiClients: $("kpiClients"), kpiAvg: $("kpiAvg"), kpiRange: $("kpiRange"), kpiBipaLeader: $("kpiBipaLeader"), kpiBipaLeaderPct: $("kpiBipaLeaderPct"), kpiRisk: $("kpiRisk"), kpiRiskPct: $("kpiRiskPct"), barProducts: $("barProducts"),
+      priceChartTitle: $("priceChartTitle"), chartContext: $("chartContext"), insights: $("insights"), referenceMatrix: $("referenceMatrix"), clientBoard: $("clientBoard"), brandBoard: $("brandBoard"), tableBody: $("tableBody"), tableCount: $("tableCount"), qualityBadge: $("qualityBadge"),
+      drawerBackdrop: $("drawerBackdrop"), calcDrawer: $("calcDrawer"), closeCalcBtn: $("closeCalcBtn"), calcProductSelect: $("calcProductSelect"), calcProductCard: $("calcProductCard"), calcMarginInput: $("calcMarginInput"), calcMarginRange: $("calcMarginRange"), calcFinishedKg: $("calcFinishedKg"), calcParaffinKg: $("calcParaffinKg"), calcBag25: $("calcBag25"), calcBag50: $("calcBag50"), calcComparison: $("calcComparison")
     };
 
     document.addEventListener("DOMContentLoaded", init);
-
     function init() {
       bindEvents();
       fillSelect(els.referenceFilter, [], "Todas las referencias");
       fillSelect(els.clientFilter, [], "Todos los clientes");
       fillSelect(els.brandFilter, [], "Todas las marcas");
-      fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
+      fillSelect(els.statusFilter, statuses(), "Todos los estatus");
+      setMode("referencia");
       loadData();
     }
-
     function bindEvents() {
-      document.querySelectorAll(".view-tab").forEach(button => {
-        button.addEventListener("click", () => {
-          state.viewMode = button.dataset.view;
-          document.querySelectorAll(".view-tab").forEach(tab => tab.classList.remove("tab-active"));
-          button.classList.add("tab-active");
-          handleViewMode();
-        });
-      });
-
-      [els.referenceFilter, els.clientFilter, els.brandFilter, els.statusFilter, els.topFilter].forEach(element => {
-        element.addEventListener("change", applyFilters);
-      });
-
+      document.querySelectorAll(".mode-btn").forEach(button => button.addEventListener("click", () => setMode(button.dataset.view)));
+      document.querySelectorAll(".tab").forEach(button => button.addEventListener("click", () => $(button.dataset.section).scrollIntoView({ behavior: "smooth", block: "start" })));
+      [els.referenceFilter, els.clientFilter, els.brandFilter, els.statusFilter, els.topFilter].forEach(input => input.addEventListener("change", applyFilters));
       els.searchInput.addEventListener("input", debounce(applyFilters, 120));
       els.refreshBtn.addEventListener("click", loadData);
-      els.exportBtn.addEventListener("click", exportCsv);
+      els.calculatorBtn.addEventListener("click", openCalculator);
+      els.closeCalcBtn.addEventListener("click", closeCalculator);
+      els.drawerBackdrop.addEventListener("click", closeCalculator);
+      els.calcProductSelect.addEventListener("change", updateCalculator);
+      els.calcMarginInput.addEventListener("input", syncMarginFromInput);
+      els.calcMarginRange.addEventListener("input", syncMarginFromRange);
+      document.querySelectorAll(".marginPreset").forEach(button => button.addEventListener("click", () => setMargin(button.dataset.margin)));
       els.clearBtn.addEventListener("click", clearFilters);
+      els.exportBtn.addEventListener("click", exportCsv);
+      els.focusRiskBtn.addEventListener("click", () => { els.statusFilter.value = "Riesgo BIPA"; applyFilters(); $("operations").scrollIntoView({ behavior: "smooth" }); });
     }
-
+    function setMode(mode) {
+      state.viewMode = mode;
+      document.querySelectorAll(".mode-btn").forEach(button => {
+        const active = button.dataset.view === mode;
+        button.classList.toggle("bg-slate-950", active);
+        button.classList.toggle("text-white", active);
+        button.classList.toggle("text-slate-600", !active);
+      });
+      els.referenceFilter.disabled = mode === "cliente";
+      if (mode === "cliente") els.referenceFilter.value = "";
+      els.priceChartTitle.textContent = mode === "cliente" ? "Radar por cliente" : "Ranking por referencia";
+      applyFilters();
+    }
     async function loadData() {
       try {
         setLoading();
-        if (!API_URL || API_URL === "TU_URL_DE_APPS_SCRIPT") {
-          throw new Error("Falta configurar API_URL con la URL publicada de Apps Script.");
-        }
-
         const payload = await loadJsonp(API_URL);
-
-        if (!payload.success) {
-          throw new Error(payload.message || "Error consultando Apps Script.");
-        }
-
+        if (!payload.success) throw new Error(payload.message || "Error consultando Apps Script.");
         state.rawData = Array.isArray(payload.data) ? payload.data : [];
         hydrateFilters(payload.filtros || {});
-        els.lastUpdate.textContent = `Actualizado: ${formatDateTime(new Date())}`;
-        handleViewMode();
+        populateCalculatorProducts();
+        const now = formatDateTime(new Date());
+        els.lastUpdate.textContent = `Actualizado: ${now}`;
+        els.sidebarUpdate.textContent = `${state.rawData.length} registros sincronizados`;
+        applyFilters();
       } catch (error) {
         console.error(error);
-        els.lastUpdate.textContent = "Error de conexión";
-        renderError("No se pudo cargar la información. Revisa la URL del Apps Script y los permisos.");
+        renderError("No se pudo cargar la información desde Apps Script.");
       }
     }
-
+    function loadJsonp(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `bipaRadar_${Date.now()}_${Math.round(Math.random() * 100000)}`;
+        const script = document.createElement("script");
+        const timer = setTimeout(() => { cleanup(); reject(new Error("Timeout consultando Apps Script.")); }, 15000);
+        window[callbackName] = payload => { cleanup(); resolve(payload); };
+        script.onerror = () => { cleanup(); reject(new Error("No se pudo conectar con Apps Script.")); };
+        script.src = `${url}${url.includes("?") ? "&" : "?"}callback=${callbackName}&_=${Date.now()}`;
+        document.body.appendChild(script);
+        function cleanup() { clearTimeout(timer); delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); }
+      });
+    }
     function hydrateFilters(filters) {
       fillSelect(els.referenceFilter, filters.referencias || uniqueValues(state.rawData, "referencia"), "Todas las referencias");
       fillSelect(els.clientFilter, filters.clientes || uniqueValues(state.rawData, "cliente"), "Todos los clientes");
       fillSelect(els.brandFilter, filters.marcas || uniqueValues(state.rawData, "marca"), "Todas las marcas");
-      fillSelect(els.statusFilter, getStatuses(), "Todos los estatus");
+      fillSelect(els.statusFilter, statuses(), "Todos los estatus");
     }
-
-    async function loadApiData(url) {
-      try {
-        const response = await fetch(`${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`, {
-          cache: "no-store",
-          redirect: "follow"
-        });
-
-        if (!response.ok) {
-          throw new Error(`Apps Script respondió ${response.status}.`);
-        }
-
-        const text = await response.text();
-        return parseApiPayload(text);
-      } catch (error) {
-        console.warn("Fetch directo falló, probando JSONP:", error);
-        return loadJsonp(url);
-      }
-    }
-
-    function parseApiPayload(text) {
-      const clean = String(text || "").trim();
-
-      if (!clean) {
-        throw new Error("Apps Script respondió vacío.");
-      }
-
-      if (clean.startsWith("{") || clean.startsWith("[")) {
-        return JSON.parse(clean);
-      }
-
-      const match = clean.match(/^[\w.$]+\(([\s\S]*)\);?$/);
-      if (match) {
-        return JSON.parse(match[1]);
-      }
-
-      throw new Error("Apps Script no devolvió JSON válido.");
-    }
-
-    function loadJsonp(url) {
-      return new Promise((resolve, reject) => {
-        const callbackName = `bipaRadarCallback_${Date.now()}_${Math.round(Math.random() * 100000)}`;
-        const script = document.createElement("script");
-        const separator = url.includes("?") ? "&" : "?";
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error("Apps Script no respondió en formato JSONP. Vuelve a publicar Code.gs como nueva versión."));
-        }, 12000);
-
-        window[callbackName] = payload => {
-          cleanup();
-          resolve(payload);
-        };
-
-        script.onerror = () => {
-          cleanup();
-          reject(new Error("No se pudo conectar con Apps Script."));
-        };
-
-        script.src = `${url}${separator}callback=${callbackName}&_=${Date.now()}`;
-        document.body.appendChild(script);
-
-        function cleanup() {
-          clearTimeout(timer);
-          delete window[callbackName];
-          if (script.parentNode) script.parentNode.removeChild(script);
-        }
-      });
-    }
-
-    function handleViewMode() {
-      const isClientMode = state.viewMode === "cliente";
-      els.referenceFilter.disabled = isClientMode;
-      if (isClientMode) els.referenceFilter.value = "";
-      els.priceChartTitle.textContent = isClientMode ? "Radar por cliente" : "Ranking por referencia";
-      applyFilters();
-    }
-
     function applyFilters() {
+      const query = normalizeText(els.searchInput.value);
       const selectedReference = els.referenceFilter.value;
       const selectedClient = els.clientFilter.value;
       const selectedBrand = els.brandFilter.value;
       const selectedStatus = els.statusFilter.value;
-      const query = normalizeText(els.searchInput.value);
-
-      state.filteredData = state.rawData.filter(item => {
+      const base = state.rawData.filter(item => {
         const matchesReference = state.viewMode === "cliente" || !selectedReference || item.referencia === selectedReference;
         const matchesClient = !selectedClient || item.cliente === selectedClient;
         const matchesBrand = !selectedBrand || item.marca === selectedBrand;
         const matchesStatus = !selectedStatus || item.estatusCompetitivo === selectedStatus;
-        const searchable = normalizeText([
-          item.cliente,
-          item.referencia,
-          item.articulo,
-          item.marca,
-          item.estado,
-          item.estatusCompetitivo
-        ].join(" "));
-
+        const searchable = normalizeText([item.cliente, item.referencia, item.articulo, item.marca, item.estado, item.estatusCompetitivo].join(" "));
         return matchesReference && matchesClient && matchesBrand && matchesStatus && (!query || searchable.includes(query));
       });
-
-      const sorted = state.filteredData.slice().sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0));
-      state.filteredData = sorted;
-
-      updateKpis(sorted);
-      updateInsights(sorted);
-      updateCharts(sorted);
-      renderTable(sorted);
+      const deduped = dedupeByHighestPrice(base, item => state.viewMode === "referencia" ? [item.referencia, item.articulo, item.marca] : [item.cliente, item.referencia, item.articulo, item.marca]);
+      state.filteredData = enrichBipaPerspective(deduped).sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0));
+      updateKpis(); updateInsights(); updateCharts(); updateBoards(); renderTable();
+      populateCalculatorProducts();
+      updateCalculator();
     }
-
-    function updateKpis(data) {
-      const prices = getPrices(data);
-      const refs = unique(data.map(item => item.referencia));
-      const clients = unique(data.map(item => item.cliente));
-
-      animateNumber(els.kpiProducts, data.length, 0);
-      animateNumber(els.kpiReferences, refs.length, 0);
-      animateNumber(els.kpiClients, clients.length, 0);
+    function dedupeByHighestPrice(data, keyGetter) {
+      const grouped = new Map();
+      data.forEach(item => {
+        const key = keyGetter(item).map(normalizeText).join("|");
+        const current = grouped.get(key);
+        if (!current || Number(item.precioUsd || 0) > Number(current.precioUsd || 0)) grouped.set(key, item);
+      });
+      return Array.from(grouped.values());
+    }
+    function enrichBipaPerspective(data) {
+      const groups = new Map();
+      data.forEach(item => {
+        const key = normalizeText(item.referencia);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(item);
+      });
+      const output = [];
+      groups.forEach(items => {
+        const bipaItems = items.filter(isBipa);
+        const compItems = items.filter(item => !isBipa(item));
+        const bipaMin = bipaItems.length ? Math.min(...bipaItems.map(item => Number(item.precioUsd || 0)).filter(Boolean)) : null;
+        const compMin = compItems.length ? Math.min(...compItems.map(item => Number(item.precioUsd || 0)).filter(Boolean)) : null;
+        const allMin = Math.min(...items.map(item => Number(item.precioUsd || 0)).filter(Boolean));
+        const sorted = items.slice().sort((a, b) => Number(a.precioUsd || 0) - Number(b.precioUsd || 0));
+        items.forEach(item => {
+          const price = Number(item.precioUsd || 0);
+          const bipaGap = isBipa(item)
+            ? (compMin ? ((price - compMin) / compMin) * 100 : 0)
+            : (bipaMin ? ((price - bipaMin) / bipaMin) * 100 : null);
+          output.push({
+            ...item,
+            rankingPrecio: sorted.findIndex(row => row === item) + 1,
+            bipaPrecioReferencia: bipaMin,
+            competidorMinReferencia: compMin,
+            brechaBipaPct: bipaGap === null ? null : Number(bipaGap.toFixed(2)),
+            diferenciaVsMinimoPct: allMin ? Number((((price - allMin) / allMin) * 100).toFixed(2)) : 0,
+            estatusCompetitivo: getBipaStatus(item, price, bipaMin, compMin, bipaGap)
+          });
+        });
+      });
+      return output;
+    }
+    function getBipaStatus(item, price, bipaMin, compMin, gap) {
+      if (isBipa(item)) {
+        if (!compMin) return "BIPA sin competencia";
+        if (price <= compMin) return "BIPA líder";
+        if (gap <= 5) return "BIPA competitivo";
+        if (gap <= 15) return "BIPA en revisión";
+        return "Riesgo BIPA";
+      }
+      if (!bipaMin) return "Competencia sin BIPA";
+      if (price < bipaMin) return "Competidor por debajo";
+      if (price <= bipaMin * 1.05) return "Competidor cercano";
+      return "Competidor sobre BIPA";
+    }
+    function updateKpis() {
+      const data = state.filteredData, prices = getPrices(data), refs = unique(data.map(x => x.referencia)), clients = unique(data.map(x => x.cliente));
+      const leaders = data.filter(x => x.estatusCompetitivo === "BIPA líder").length;
+      const risks = data.filter(x => x.estatusCompetitivo === "Riesgo BIPA").length;
+      const min = prices.length ? Math.min(...prices) : 0, max = prices.length ? Math.max(...prices) : 0;
+      animateNumber(els.kpiProducts, data.length); animateNumber(els.kpiReferences, refs.length); animateNumber(els.kpiClients, clients.length); animateNumber(els.kpiBipaLeader, leaders); animateNumber(els.kpiRisk, risks);
       els.kpiAvg.textContent = formatCurrency(average(prices));
-      animateNumber(els.kpiBipaLeader, data.filter(item => item.estatusCompetitivo === "BIPA líder").length, 0);
-      animateNumber(els.kpiRisk, data.filter(item => item.estatusCompetitivo === "Riesgo alto").length, 0);
-
-      const min = prices.length ? Math.min(...prices) : 0;
-      const max = prices.length ? Math.max(...prices) : 0;
-      els.priceRange.textContent = `${formatCurrency(min)} - ${formatCurrency(max)}`;
+      els.kpiRange.textContent = `Rango ${formatCurrency(min)} - ${formatCurrency(max)}`;
+      els.kpiBipaLeaderPct.textContent = `${percent(leaders, data.length)} de productos`;
+      els.kpiRiskPct.textContent = `${percent(risks, data.length)} de productos`;
+      els.barProducts.style.width = `${Math.min(100, data.length / Math.max(1, state.rawData.length) * 100)}%`;
     }
-
-    function updateInsights(data) {
-      const prices = getPrices(data);
-      const refs = unique(data.map(item => item.referencia));
-      const clients = unique(data.map(item => item.cliente));
-      const bipaLeader = data.filter(item => item.estatusCompetitivo === "BIPA líder").length;
-      const compLeader = data.filter(item => item.estatusCompetitivo === "Competencia líder").length;
-      const risks = data.filter(item => item.estatusCompetitivo === "Riesgo alto").length;
-      const noWeight = data.filter(item => !item.peso || item.precioPorGramo === null).length;
-      const topProduct = data.slice().sort((a, b) => Number(b.precioUsd || 0) - Number(a.precioUsd || 0))[0];
-      const cheapest = data.slice().sort((a, b) => Number(a.precioUsd || 0) - Number(b.precioUsd || 0))[0];
-
-      const insightItems = [
-        {
-          tone: "blue",
-          title: `${refs.length} referencias en análisis`,
-          text: `La vista actual cruza ${data.length} productos en ${clients.length} clientes.`
-        },
-        {
-          tone: bipaLeader >= compLeader ? "green" : "amber",
-          title: `${bipaLeader} posiciones con BIPA líder`,
-          text: compLeader ? `La competencia lidera ${compLeader} productos comparables.` : "No hay líderes competidores en esta vista."
-        },
-        {
-          tone: risks ? "red" : "green",
-          title: `${risks} riesgos altos detectados`,
-          text: risks ? "Conviene revisar referencias donde BIPA queda más de 15% sobre el mínimo." : "La vista filtrada no muestra riesgos altos."
-        },
-        {
-          tone: "slate",
-          title: `Rango ${formatCurrency(prices.length ? Math.min(...prices) : 0)} a ${formatCurrency(prices.length ? Math.max(...prices) : 0)}`,
-          text: topProduct ? `Mayor precio: ${topProduct.articulo}. Menor precio: ${cheapest.articulo}.` : "Sin productos para analizar."
-        }
-      ];
-
-      els.insights.innerHTML = insightItems.map(renderInsight).join("");
-
-      els.qualityPanel.innerHTML = [
-        renderQuality("Registros sin peso", noWeight, noWeight ? "red" : "green"),
-        renderQuality("Con precio por gramo", data.length - noWeight, "blue"),
-        renderQuality("Marcas visibles", unique(data.map(item => item.marca)).length, "slate")
+    function updateInsights() {
+      const data = state.filteredData, prices = getPrices(data), refs = unique(data.map(x => x.referencia)), clients = unique(data.map(x => x.cliente));
+      const bipaLeader = data.filter(x => x.estatusCompetitivo === "BIPA líder").length, compLeader = data.filter(x => x.estatusCompetitivo === "Competidor por debajo").length, risks = data.filter(x => x.estatusCompetitivo === "Riesgo BIPA").length, noWeight = data.filter(x => !x.peso || x.precioPorGramo === null).length;
+      const top = data[0], low = data.slice().sort((a, b) => Number(a.precioUsd || 0) - Number(b.precioUsd || 0))[0];
+      els.sidebarBrief.textContent = risks ? `${risks} riesgos BIPA detectados. Prioridad: referencias donde un competidor está más barato.` : `${bipaLeader} productos BIPA lideran contra la competencia en esta vista.`;
+      els.insights.innerHTML = [
+        insight("blue", `${refs.length} referencias analizadas`, `La vista cruza ${data.length} productos consolidados en ${clients.length} clientes.`),
+        insight(bipaLeader >= compLeader ? "green" : "amber", `${bipaLeader} productos BIPA líderes`, compLeader ? `${compLeader} competidores están por debajo del mejor precio BIPA.` : "BIPA no tiene competidores por debajo en esta vista."),
+        insight(risks ? "red" : "green", `${risks} riesgos BIPA`, risks ? "BIPA está más de 15% por encima del competidor más barato en esos casos." : "No hay riesgos BIPA con los filtros actuales."),
+        insight("slate", `Rango ${formatCurrency(prices.length ? Math.min(...prices) : 0)} a ${formatCurrency(prices.length ? Math.max(...prices) : 0)}`, top ? `Mayor: ${top.articulo}. Menor: ${low.articulo}.` : "Sin productos filtrados."),
+        insight(noWeight ? "amber" : "green", `${noWeight} registros sin peso`, noWeight ? "El precio por gramo no puede calcularse en esos productos." : "Todos los productos tienen peso útil.")
       ].join("");
+      els.qualityBadge.textContent = noWeight ? `${noWeight} sin peso` : "Datos completos";
+      els.qualityBadge.className = `rounded-full px-3 py-1 text-sm font-black ${noWeight ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`;
     }
-
-    function updateCharts(data) {
-      const limit = Number(els.topFilter.value || 25);
-      const chartData = data.slice(0, limit);
-      const labels = chartData.map(item => truncateLabel(item.articulo, 24));
-
-      els.chartContext.textContent = `${chartData.length} de ${data.length} productos`;
-      renderPriceChart(chartData, labels);
-      renderGramChart(chartData, labels);
-      renderGapChart(chartData, labels);
-      renderStatusChart(data);
+    function updateCharts() {
+      const limit = Number(els.topFilter.value || 25), data = state.filteredData.slice(0, limit), labels = data.map(x => truncate(x.articulo, 24));
+      els.chartContext.textContent = `${data.length} de ${state.filteredData.length} productos`;
+      chart("priceChart", "price", { type: "bar", data: { labels, datasets: [{ label: "Precio USD", data: data.map(x => x.precioUsd), backgroundColor: data.map(x => brandColor(x.marca, .82)), borderRadius: 8, maxBarThickness: 38 }] }, options: barOptions(v => formatCurrency(v)) });
+      chart("gramChart", "gram", { type: "bar", data: { labels, datasets: [{ label: "USD por gramo", data: data.map(x => x.precioPorGramo || 0), backgroundColor: "rgba(0,168,120,.78)", borderRadius: 8, maxBarThickness: 38 }] }, options: barOptions(v => Number(v || 0).toFixed(4)) });
+      chart("gapChart", "gap", { type: "bar", data: { labels, datasets: [{ label: "Brecha vs mínimo", data: data.map(x => x.diferenciaVsMinimoPct || 0), backgroundColor: data.map(x => gapColor(x.diferenciaVsMinimoPct, .82)), borderRadius: 8, maxBarThickness: 38 }] }, options: barOptions(v => `${Number(v || 0).toFixed(2)}%`) });
+      const statusLabels = statuses();
+      chart("statusChart", "status", { type: "doughnut", data: { labels: statusLabels, datasets: [{ data: statusLabels.map(s => state.filteredData.filter(x => x.estatusCompetitivo === s).length), backgroundColor: ["#00a878", "#2f6fed", "#d97706", "#e03131", "#ef4444", "#14b8a6", "#64748b", "#94a3b8", "#475569"], borderColor: "#fff", borderWidth: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 10 } } }, animation: { duration: 800, easing: "easeOutQuart" } } });
     }
-
-    function renderPriceChart(data, labels) {
-      destroyChart("price");
-      state.charts.price = new Chart(document.getElementById("priceChart"), {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Precio USD",
-            data: data.map(item => Number(item.precioUsd || 0)),
-            backgroundColor: data.map(item => brandColor(item.marca, .78)),
-            borderColor: data.map(item => brandColor(item.marca, 1)),
-            borderWidth: 1,
-            borderRadius: 6,
-            maxBarThickness: 34
-          }]
-        },
-        options: baseChartOptions(value => formatCurrency(value), true)
+    function chart(canvasId, key, config) { if (state.charts[key]) state.charts[key].destroy(); state.charts[key] = new Chart($(canvasId), config); }
+    function barOptions(formatter) {
+      return { responsive: true, maintainAspectRatio: false, animation: { duration: 780, easing: "easeOutQuart" }, interaction: { mode: "index", intersect: false }, plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { backgroundColor: "#08111f", padding: 12, cornerRadius: 10, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatter(ctx.raw)}` } } }, scales: { x: { grid: { color: "rgba(100,116,139,.14)" }, ticks: { color: "#64748b", maxRotation: 56, minRotation: 34, font: { size: 11, weight: "600" } } }, y: { beginAtZero: true, grid: { color: "rgba(100,116,139,.20)" }, ticks: { color: "#64748b", callback: formatter } } } };
+    }
+    function updateBoards() {
+      const data = state.filteredData;
+      els.referenceMatrix.innerHTML = summaryBy(data, "referencia").slice(0, 10).map(row => boardRow(row.name, `${row.count} productos`, row.risk, row.avg)).join("");
+      els.clientBoard.innerHTML = summaryBy(data, "cliente").slice(0, 8).map(row => boardRow(row.name, `${row.count} productos`, row.risk, row.avg)).join("");
+      els.brandBoard.innerHTML = summaryBy(data, "marca").slice(0, 8).map(row => boardRow(row.name, `${row.count} productos`, row.risk, row.avg)).join("");
+    }
+    function summaryBy(data, key) {
+      const groups = new Map();
+      data.forEach(item => { const name = item[key] || "Sin dato"; if (!groups.has(name)) groups.set(name, []); groups.get(name).push(item); });
+      return Array.from(groups.entries()).map(([name, items]) => ({ name, count: items.length, avg: average(getPrices(items)), risk: items.filter(x => x.estatusCompetitivo === "Riesgo BIPA").length })).sort((a, b) => b.risk - a.risk || b.count - a.count);
+    }
+    function renderTable() {
+      const data = state.filteredData;
+      els.tableCount.textContent = `${data.length} productos`;
+      if (!data.length) { els.tableBody.innerHTML = `<tr><td colspan="11" class="px-4 py-14 text-center font-bold text-slate-500">Sin resultados para los filtros seleccionados.</td></tr>`; return; }
+      els.tableBody.innerHTML = data.map(item => `<tr class="border-b border-slate-100 transition hover:bg-blue-50/60"><td class="px-4 py-3 text-sm font-black text-slate-900">${escapeHtml(item.cliente)}</td><td class="px-4 py-3 text-sm font-bold text-slate-600">${escapeHtml(item.referencia)}</td><td class="max-w-[310px] px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td><td class="px-4 py-3 text-sm">${brandBadge(item.marca)}</td><td class="px-4 py-3 text-sm text-slate-600">${escapeHtml(item.estado || "-")}</td><td class="px-4 py-3 text-right text-sm text-slate-700">${formatNumber(item.peso)}</td><td class="px-4 py-3 text-right text-sm font-black text-slate-950">${formatCurrency(item.precioUsd)}</td><td class="px-4 py-3 text-right text-sm text-slate-700">${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}</td><td class="px-4 py-3 text-right text-sm font-black">#${item.rankingPrecio || "-"}</td><td class="px-4 py-3 text-right text-sm font-black ${Number(item.brechaBipaPct || 0) > 15 ? "text-red-600" : "text-emerald-600"}">${item.brechaBipaPct === null ? "-" : formatPercent(item.brechaBipaPct)}</td><td class="px-4 py-3 text-sm">${statusBadge(item.estatusCompetitivo)}</td></tr>`).join("");
+    }
+    function setLoading() {
+      els.insights.innerHTML = Array.from({ length: 5 }).map(() => `<div class="h-20 rounded-xl shimmer"></div>`).join("");
+      els.referenceMatrix.innerHTML = Array.from({ length: 8 }).map(() => `<div class="h-14 rounded-xl shimmer"></div>`).join("");
+      els.clientBoard.innerHTML = Array.from({ length: 6 }).map(() => `<div class="h-12 rounded-xl shimmer"></div>`).join("");
+      els.brandBoard.innerHTML = Array.from({ length: 6 }).map(() => `<div class="h-12 rounded-xl shimmer"></div>`).join("");
+      els.tableBody.innerHTML = Array.from({ length: 10 }).map(() => `<tr><td colspan="11" class="px-4 py-3"><div class="h-10 rounded-lg shimmer"></div></td></tr>`).join("");
+    }
+    function renderError(message) { els.lastUpdate.textContent = "Error de conexión"; els.insights.innerHTML = insight("red", "No se pudo conectar", message); els.tableBody.innerHTML = `<tr><td colspan="11" class="px-4 py-14 text-center font-black text-red-600">${escapeHtml(message)}</td></tr>`; }
+    function openCalculator() {
+      populateCalculatorProducts();
+      els.drawerBackdrop.classList.add("open");
+      els.calcDrawer.classList.add("open");
+      updateCalculator();
+    }
+    function closeCalculator() {
+      els.drawerBackdrop.classList.remove("open");
+      els.calcDrawer.classList.remove("open");
+    }
+    function populateCalculatorProducts() {
+      const current = els.calcProductSelect.value;
+      const data = (state.filteredData.length ? state.filteredData : state.rawData)
+        .filter(item => Number(item.precioUsd || 0) > 0)
+        .slice()
+        .sort((a, b) => String(a.referencia).localeCompare(String(b.referencia), "es") || String(a.articulo).localeCompare(String(b.articulo), "es"));
+      els.calcProductSelect.innerHTML = `<option value="">Selecciona artículo...</option>` + data.map((item, index) => {
+        item.__calcId = `${normalizeText(item.cliente)}|${normalizeText(item.referencia)}|${normalizeText(item.articulo)}|${normalizeText(item.marca)}|${item.precioUsd}|${index}`;
+        return `<option value="${escapeHtml(item.__calcId)}">${escapeHtml(item.referencia)} · ${escapeHtml(item.articulo)} · ${escapeHtml(item.marca)} · ${formatCurrency(item.precioUsd)}</option>`;
+      }).join("");
+      if (current && Array.from(els.calcProductSelect.options).some(option => option.value === current)) els.calcProductSelect.value = current;
+    }
+    function selectedCalcProduct() {
+      const id = els.calcProductSelect.value;
+      return (state.filteredData.length ? state.filteredData : state.rawData).find(item => item.__calcId === id) || null;
+    }
+    function syncMarginFromInput() {
+      const value = clamp(Number(els.calcMarginInput.value || 0), 0, 500);
+      els.calcMarginRange.value = Math.min(150, value);
+      updateMarginButtons(value);
+      updateCalculator();
+    }
+    function syncMarginFromRange() {
+      const value = Number(els.calcMarginRange.value || 0);
+      els.calcMarginInput.value = value;
+      updateMarginButtons(value);
+      updateCalculator();
+    }
+    function setMargin(value) {
+      const margin = Number(value || 0);
+      els.calcMarginInput.value = margin;
+      els.calcMarginRange.value = margin;
+      updateMarginButtons(margin);
+      updateCalculator();
+    }
+    function updateMarginButtons(value) {
+      document.querySelectorAll(".marginPreset").forEach(button => {
+        const active = Number(button.dataset.margin) === Number(value);
+        button.classList.toggle("bg-slate-950", active);
+        button.classList.toggle("text-white", active);
+        button.classList.toggle("bg-slate-100", !active);
+        button.classList.toggle("text-slate-700", !active);
       });
     }
-
-    function renderGramChart(data, labels) {
-      destroyChart("gram");
-      state.charts.gram = new Chart(document.getElementById("gramChart"), {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Precio por gramo",
-            data: data.map(item => item.precioPorGramo === null ? 0 : Number(item.precioPorGramo)),
-            backgroundColor: "rgba(5, 150, 105, .72)",
-            borderColor: "rgba(5, 150, 105, 1)",
-            borderWidth: 1,
-            borderRadius: 6,
-            maxBarThickness: 34
-          }]
-        },
-        options: baseChartOptions(value => Number(value || 0).toFixed(4), true)
-      });
-    }
-
-    function renderGapChart(data, labels) {
-      destroyChart("gap");
-      state.charts.gap = new Chart(document.getElementById("gapChart"), {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: "Brecha vs mínimo",
-            data: data.map(item => Number(item.diferenciaVsMinimoPct || 0)),
-            backgroundColor: data.map(item => gapColor(item.diferenciaVsMinimoPct, .76)),
-            borderColor: data.map(item => gapColor(item.diferenciaVsMinimoPct, 1)),
-            borderWidth: 1,
-            borderRadius: 6,
-            maxBarThickness: 34
-          }]
-        },
-        options: baseChartOptions(value => `${Number(value || 0).toFixed(2)}%`, true)
-      });
-    }
-
-    function renderStatusChart(data) {
-      destroyChart("status");
-      const statuses = getStatuses();
-      const counts = statuses.map(status => data.filter(item => item.estatusCompetitivo === status).length);
-
-      state.charts.status = new Chart(document.getElementById("statusChart"), {
-        type: "doughnut",
-        data: {
-          labels: statuses,
-          datasets: [{
-            data: counts,
-            backgroundColor: [
-              "rgba(5, 150, 105, .82)",
-              "rgba(37, 99, 235, .82)",
-              "rgba(217, 119, 6, .82)",
-              "rgba(220, 38, 38, .82)",
-              "rgba(124, 58, 237, .82)",
-              "rgba(51, 65, 85, .82)",
-              "rgba(15, 23, 42, .82)"
-            ],
-            borderColor: "#fff",
-            borderWidth: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 850, easing: "easeOutQuart" },
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true }
-            }
-          },
-          cutout: "64%"
-        }
-      });
-    }
-
-    function baseChartOptions(tickFormatter, showLegend) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 850, easing: "easeOutQuart" },
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: {
-            display: showLegend,
-            position: "bottom",
-            labels: { boxWidth: 12, boxHeight: 12, usePointStyle: true }
-          },
-          tooltip: {
-            backgroundColor: "#07111f",
-            padding: 12,
-            cornerRadius: 8,
-            callbacks: {
-              label: context => `${context.dataset.label}: ${tickFormatter(context.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: "rgba(148, 163, 184, .16)" },
-            ticks: { maxRotation: 60, minRotation: 35, color: "#475569", font: { size: 11 } }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: "rgba(148, 163, 184, .22)" },
-            ticks: { color: "#475569", callback: tickFormatter }
-          }
-        }
-      };
-    }
-
-    function renderTable(data) {
-      els.tableCount.textContent = `${data.length} registros`;
-
-      if (!data.length) {
-        els.tableBody.innerHTML = `
-          <tr>
-            <td colspan="11" class="px-4 py-12 text-center text-slate-500">
-              No hay registros para los filtros seleccionados.
-            </td>
-          </tr>
-        `;
+    function updateCalculator() {
+      const item = selectedCalcProduct();
+      const margin = clamp(Number(els.calcMarginInput.value || 0), 0, 500);
+      if (!item) {
+        els.calcProductCard.innerHTML = "Selecciona un artículo para iniciar el cálculo.";
+        setCalcEmpty();
         return;
       }
-
-      els.tableBody.innerHTML = data.map(item => `
-        <tr class="group transition duration-200 hover:bg-blue-50/60">
-          <td class="px-4 py-3 text-sm font-bold text-slate-900">${escapeHtml(item.cliente)}</td>
-          <td class="px-4 py-3 text-sm text-slate-700">${escapeHtml(item.referencia)}</td>
-          <td class="max-w-[280px] px-4 py-3 text-sm text-slate-700">${escapeHtml(item.articulo)}</td>
-          <td class="px-4 py-3 text-sm">${brandBadge(item.marca)}</td>
-          <td class="px-4 py-3 text-sm text-slate-600">${escapeHtml(item.estado || "-")}</td>
-          <td class="px-4 py-3 text-right text-sm text-slate-700">${formatNumber(item.peso)}</td>
-          <td class="px-4 py-3 text-right text-sm font-black text-slate-950">${formatCurrency(item.precioUsd)}</td>
-          <td class="px-4 py-3 text-right text-sm text-slate-700">${item.precioPorGramo === null ? "-" : Number(item.precioPorGramo).toFixed(4)}</td>
-          <td class="px-4 py-3 text-right text-sm font-black text-slate-700">#${item.rankingPrecio || "-"}</td>
-          <td class="px-4 py-3 text-right text-sm font-bold ${Number(item.diferenciaVsMinimoPct || 0) > 15 ? "text-red-600" : "text-emerald-600"}">
-            ${formatPercent(item.diferenciaVsMinimoPct)}
-          </td>
-          <td class="px-4 py-3 text-sm">${statusBadge(item.estatusCompetitivo)}</td>
-        </tr>
-      `).join("");
+      const price = Number(item.precioUsd || 0);
+      const weight = Number(item.peso || 0);
+      els.calcProductCard.innerHTML = `<div class="grid gap-3 sm:grid-cols-2">
+        <div><p class="text-xs font-black uppercase tracking-[.14em] text-slate-500">Artículo</p><p class="mt-1 font-black text-slate-950">${escapeHtml(item.articulo)}</p></div>
+        <div><p class="text-xs font-black uppercase tracking-[.14em] text-slate-500">Referencia BIPA</p><p class="mt-1 font-black text-slate-950">${escapeHtml(item.referencia)}</p></div>
+        <div><p class="text-xs font-black uppercase tracking-[.14em] text-slate-500">Cliente / marca</p><p class="mt-1 font-black text-slate-950">${escapeHtml(item.cliente)} · ${escapeHtml(item.marca)}</p></div>
+        <div><p class="text-xs font-black uppercase tracking-[.14em] text-slate-500">Precio y peso</p><p class="mt-1 font-black text-slate-950">${formatCurrency(price)} · ${formatNumber(weight)} g</p></div>
+      </div>`;
+      if (!weight || weight <= 0) {
+        setCalcEmpty();
+        els.calcComparison.innerHTML = `<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 font-bold text-amber-800">Este artículo no tiene peso válido. No se puede calcular precio por kilo ni costo estimado de parafina.</div>`;
+        return;
+      }
+      const kg = weight / 1000;
+      const finishedKg = price / kg;
+      const paraffinKg = finishedKg / (1 + margin / 100);
+      els.calcFinishedKg.textContent = formatCurrency(finishedKg);
+      els.calcParaffinKg.textContent = formatCurrency(paraffinKg);
+      els.calcBag25.textContent = formatCurrency(paraffinKg * 25);
+      els.calcBag50.textContent = formatCurrency(paraffinKg * 50);
+      renderCalcComparison(item, margin);
     }
-
-    function setLoading() {
-      els.tableBody.innerHTML = Array.from({ length: 8 }).map(() => `
-        <tr>
-          <td colspan="11" class="px-4 py-3">
-            <div class="h-10 rounded-md shimmer"></div>
-          </td>
-        </tr>
-      `).join("");
-
-      els.insights.innerHTML = Array.from({ length: 4 }).map(() => `<div class="h-20 rounded-lg shimmer"></div>`).join("");
-      els.qualityPanel.innerHTML = Array.from({ length: 3 }).map(() => `<div class="h-12 rounded-lg shimmer"></div>`).join("");
-    }
-
-    function renderError(message) {
-      els.tableBody.innerHTML = `
-        <tr>
-          <td colspan="11" class="px-4 py-12 text-center font-bold text-red-600">${escapeHtml(message)}</td>
-        </tr>
-      `;
-      els.insights.innerHTML = renderInsight({
-        tone: "red",
-        title: "No se pudo conectar",
-        text: message
-      });
-      els.qualityPanel.innerHTML = renderQuality("Estado de carga", "Error", "red");
-    }
-
-    function renderInsight(item) {
-      const styles = {
-        blue: "border-blue-200 bg-blue-50 text-blue-700",
-        green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-        amber: "border-amber-200 bg-amber-50 text-amber-700",
-        red: "border-red-200 bg-red-50 text-red-700",
-        slate: "border-slate-200 bg-slate-50 text-slate-700"
-      };
-
-      return `
-        <div class="rounded-lg border p-4 ${styles[item.tone] || styles.slate}">
-          <p class="font-black">${escapeHtml(item.title)}</p>
-          <p class="mt-1 text-sm opacity-80">${escapeHtml(item.text)}</p>
+    function renderCalcComparison(item, margin) {
+      const comparable = (state.filteredData.length ? state.filteredData : state.rawData)
+        .filter(row => normalizeText(row.referencia) === normalizeText(item.referencia) && Number(row.peso || 0) > 0 && Number(row.precioUsd || 0) > 0)
+        .map(row => {
+          const finishedKg = Number(row.precioUsd || 0) / (Number(row.peso || 0) / 1000);
+          return { ...row, finishedKg, paraffinKg: finishedKg / (1 + margin / 100) };
+        })
+        .sort((a, b) => a.paraffinKg - b.paraffinKg);
+      if (!comparable.length) {
+        els.calcComparison.innerHTML = `<div class="rounded-xl border border-slate-200 bg-white p-4 font-bold text-slate-600">No hay otros productos con peso válido en esta referencia.</div>`;
+        return;
+      }
+      const bipa = comparable.filter(isBipa).sort((a, b) => a.paraffinKg - b.paraffinKg)[0];
+      const bestCompetitor = comparable.filter(row => !isBipa(row)).sort((a, b) => a.paraffinKg - b.paraffinKg)[0];
+      const gap = bipa && bestCompetitor ? ((bipa.paraffinKg - bestCompetitor.paraffinKg) / bestCompetitor.paraffinKg) * 100 : null;
+      els.calcComparison.innerHTML = `
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <p class="text-xs font-black uppercase tracking-[.14em] text-blue-700">Mejor BIPA</p>
+            <p class="mt-2 text-xl font-black text-blue-900">${bipa ? formatCurrency(bipa.paraffinKg) : "Sin BIPA"}</p>
+            <p class="mt-1 text-sm font-semibold text-blue-800">${bipa ? escapeHtml(bipa.articulo) : "No hay artículo BIPA con peso válido"}</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-4">
+            <p class="text-xs font-black uppercase tracking-[.14em] text-slate-500">Mejor competidor</p>
+            <p class="mt-2 text-xl font-black text-slate-950">${bestCompetitor ? formatCurrency(bestCompetitor.paraffinKg) : "Sin competencia"}</p>
+            <p class="mt-1 text-sm font-semibold text-slate-600">${bestCompetitor ? escapeHtml(bestCompetitor.articulo) : "No hay competidor con peso válido"}</p>
+          </div>
         </div>
-      `;
-    }
-
-    function renderQuality(label, value, tone) {
-      const colors = {
-        red: "text-red-600 bg-red-50",
-        green: "text-emerald-600 bg-emerald-50",
-        blue: "text-blue-600 bg-blue-50",
-        slate: "text-slate-600 bg-slate-100"
-      };
-
-      return `
-        <div class="flex items-center justify-between rounded-lg px-4 py-3 ${colors[tone] || colors.slate}">
-          <span class="text-sm font-bold">${escapeHtml(label)}</span>
-          <span class="text-lg font-black">${value}</span>
+        <div class="rounded-xl border ${gap !== null && gap > 0 ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"} p-4 font-bold">
+          ${gap === null ? "No hay comparación BIPA vs competencia con peso válido." : gap > 0 ? `BIPA estima ${formatPercent(gap)} por encima del competidor en costo implícito de parafina.` : `BIPA estima ${formatPercent(Math.abs(gap))} por debajo del competidor en costo implícito de parafina.`}
         </div>
+        <div class="space-y-2">${comparable.slice(0, 6).map(row => `<div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3"><div class="min-w-0"><p class="truncate text-sm font-black text-slate-900">${escapeHtml(row.articulo)}</p><p class="text-xs font-bold text-slate-500">${escapeHtml(row.marca)} · ${formatCurrency(row.finishedKg)}/kg terminado</p></div><span class="shrink-0 text-sm font-black text-slate-950">${formatCurrency(row.paraffinKg)}/kg</span></div>`).join("")}</div>
       `;
     }
-
-    function brandBadge(brand) {
-      const isBipa = normalizeText(brand) === "bipa";
-      const cls = isBipa
-        ? "bg-blue-100 text-blue-700 ring-blue-200"
-        : "bg-slate-100 text-slate-700 ring-slate-200";
-
-      return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${cls}">${escapeHtml(brand || "-")}</span>`;
+    function setCalcEmpty() {
+      els.calcFinishedKg.textContent = "-";
+      els.calcParaffinKg.textContent = "-";
+      els.calcBag25.textContent = "-";
+      els.calcBag50.textContent = "-";
+      els.calcComparison.innerHTML = "";
     }
-
-    function statusBadge(status) {
-      const map = {
-        "BIPA líder": "bg-emerald-100 text-emerald-700 ring-emerald-200",
-        "Competitivo": "bg-blue-100 text-blue-700 ring-blue-200",
-        "Revisar": "bg-amber-100 text-amber-700 ring-amber-200",
-        "Riesgo alto": "bg-red-100 text-red-700 ring-red-200",
-        "Competencia líder": "bg-violet-100 text-violet-700 ring-violet-200",
-        "Sin BIPA": "bg-slate-100 text-slate-700 ring-slate-200",
-        "Monitorear": "bg-slate-100 text-slate-700 ring-slate-200"
-      };
-
-      return `<span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black ring-1 ${map[status] || map["Monitorear"]}">${escapeHtml(status || "Monitorear")}</span>`;
-    }
-
+    function clearFilters() { els.referenceFilter.value = ""; els.clientFilter.value = ""; els.brandFilter.value = ""; els.statusFilter.value = ""; els.searchInput.value = ""; applyFilters(); }
     function exportCsv() {
-      const headers = ["Cliente", "Referencia", "Articulo", "Marca", "Estado", "Peso", "Precio USD", "Precio por gramo", "Ranking", "Brecha vs minimo", "Estatus"];
-      const rows = state.filteredData.map(item => [
-        item.cliente,
-        item.referencia,
-        item.articulo,
-        item.marca,
-        item.estado,
-        item.peso,
-        item.precioUsd,
-        item.precioPorGramo,
-        item.rankingPrecio,
-        item.diferenciaVsMinimoPct,
-        item.estatusCompetitivo
-      ]);
-
-      const csv = [headers].concat(rows)
-        .map(row => row.map(value => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
-        .join("\n");
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `bipa-radar-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const headers = ["Cliente", "Referencia", "Articulo", "Marca", "Estado", "Peso", "Precio USD", "Precio por gramo", "Ranking", "Brecha minimo", "Estatus"];
+      const rows = state.filteredData.map(item => [item.cliente, item.referencia, item.articulo, item.marca, item.estado, item.peso, item.precioUsd, item.precioPorGramo, item.rankingPrecio, item.diferenciaVsMinimoPct, item.estatusCompetitivo]);
+      const csv = [headers].concat(rows).map(row => row.map(value => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), url = URL.createObjectURL(blob), link = document.createElement("a");
+      link.href = url; link.download = `bipa-radar-${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     }
-
-    function clearFilters() {
-      els.referenceFilter.value = "";
-      els.clientFilter.value = "";
-      els.brandFilter.value = "";
-      els.statusFilter.value = "";
-      els.searchInput.value = "";
-      applyFilters();
+    function insight(tone, title, text) {
+      const cls = { blue: "border-blue-200 bg-blue-50 text-blue-800", green: "border-emerald-200 bg-emerald-50 text-emerald-800", amber: "border-amber-200 bg-amber-50 text-amber-800", red: "border-red-200 bg-red-50 text-red-800", slate: "border-slate-200 bg-slate-50 text-slate-700" }[tone] || "border-slate-200 bg-slate-50 text-slate-700";
+      return `<div class="rounded-xl border p-4 ${cls}"><p class="font-black">${escapeHtml(title)}</p><p class="mt-1 text-sm font-medium opacity-80">${escapeHtml(text)}</p></div>`;
     }
-
-    function fillSelect(select, values, defaultLabel) {
-      select.innerHTML = `<option value="">${escapeHtml(defaultLabel)}</option>`;
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
+    function boardRow(name, meta, risk, avg) {
+      const riskClass = risk ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700";
+      return `<div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3"><div class="min-w-0"><p class="truncate text-sm font-black text-slate-900">${escapeHtml(name)}</p><p class="text-xs font-bold text-slate-500">${escapeHtml(meta)} · ${formatCurrency(avg)}</p></div><span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${riskClass}">${risk} riesgo</span></div>`;
     }
-
-    function getStatuses() {
-      return ["BIPA líder", "Competitivo", "Revisar", "Riesgo alto", "Competencia líder", "Sin BIPA", "Monitorear"];
+    function brandBadge(brand) { const isBipa = normalizeText(brand) === "bipa"; const cls = isBipa ? "bg-blue-100 text-blue-800 ring-blue-200" : "bg-slate-100 text-slate-700 ring-slate-200"; return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-black ring-1 ${cls}">${escapeHtml(brand || "-")}</span>`; }
+    function statusBadge(status) {
+      const cls = { "BIPA líder": "bg-emerald-100 text-emerald-800 ring-emerald-200", "BIPA competitivo": "bg-blue-100 text-blue-800 ring-blue-200", "BIPA en revisión": "bg-amber-100 text-amber-800 ring-amber-200", "Riesgo BIPA": "bg-red-100 text-red-800 ring-red-200", "Competidor por debajo": "bg-red-100 text-red-800 ring-red-200", "Competidor cercano": "bg-teal-100 text-teal-800 ring-teal-200", "Competidor sobre BIPA": "bg-slate-100 text-slate-700 ring-slate-200", "BIPA sin competencia": "bg-slate-100 text-slate-700 ring-slate-200", "Competencia sin BIPA": "bg-violet-100 text-violet-800 ring-violet-200" }[status] || "bg-slate-100 text-slate-700 ring-slate-200";
+      return `<span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-black ring-1 ${cls}">${escapeHtml(status || "Monitorear")}</span>`;
     }
-
-    function getPrices(data) {
-      return data.map(item => Number(item.precioUsd || 0)).filter(value => Number.isFinite(value) && value > 0);
-    }
-
-    function average(values) {
-      if (!values.length) return 0;
-      return values.reduce((sum, value) => sum + value, 0) / values.length;
-    }
-
-    function unique(values) {
-      const seen = new Set();
-      return values.filter(value => {
-        const clean = String(value || "").trim();
-        const key = normalizeText(clean);
-        if (!clean || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-
-    function uniqueValues(data, key) {
-      return unique(data.map(item => item[key])).sort((a, b) => String(a).localeCompare(String(b), "es"));
-    }
-
-    function brandColor(brand, alpha) {
-      if (normalizeText(brand) === "bipa") return `rgba(37, 99, 235, ${alpha})`;
-      if (normalizeText(brand).includes("patrona")) return `rgba(124, 58, 237, ${alpha})`;
-      if (normalizeText(brand).includes("estrella")) return `rgba(217, 119, 6, ${alpha})`;
-      return `rgba(15, 23, 42, ${alpha})`;
-    }
-
-    function gapColor(value, alpha) {
-      const num = Number(value || 0);
-      if (num <= 5) return `rgba(5, 150, 105, ${alpha})`;
-      if (num <= 15) return `rgba(217, 119, 6, ${alpha})`;
-      return `rgba(220, 38, 38, ${alpha})`;
-    }
-
-    function destroyChart(key) {
-      if (state.charts[key]) {
-        state.charts[key].destroy();
-        state.charts[key] = null;
-      }
-    }
-
-    function animateNumber(element, target, decimals) {
-      const start = Number(element.dataset.value || 0);
-      const end = Number(target || 0);
-      const duration = 420;
-      const startedAt = performance.now();
-
-      function tick(now) {
-        const progress = Math.min((now - startedAt) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const value = start + (end - start) * eased;
-        element.textContent = value.toLocaleString("es-VE", {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals
-        });
-        if (progress < 1) requestAnimationFrame(tick);
-      }
-
-      element.dataset.value = String(end);
-      requestAnimationFrame(tick);
-    }
-
-    function debounce(fn, delay) {
-      let timer;
-      return function(...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
-      };
-    }
-
-    function normalizeText(value) {
-      return String(value || "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-    }
-
-    function truncateLabel(value, maxLength) {
-      const text = String(value || "");
-      return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
-    }
-
-    function formatCurrency(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function formatNumber(value) {
-      return Number(value || 0).toLocaleString("es-VE", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      });
-    }
-
-    function formatPercent(value) {
-      return `${Number(value || 0).toFixed(2)}%`;
-    }
-
-    function formatDateTime(date) {
-      return date.toLocaleString("es-VE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
+    function fillSelect(select, values, defaultLabel) { select.innerHTML = `<option value="">${escapeHtml(defaultLabel)}</option>`; values.forEach(value => { const option = document.createElement("option"); option.value = value; option.textContent = value; select.appendChild(option); }); }
+    function statuses() { return ["BIPA líder", "BIPA competitivo", "BIPA en revisión", "Riesgo BIPA", "Competidor por debajo", "Competidor cercano", "Competidor sobre BIPA", "BIPA sin competencia", "Competencia sin BIPA"]; }
+    function uniqueValues(data, key) { return unique(data.map(item => item[key])).sort((a, b) => String(a).localeCompare(String(b), "es")); }
+    function unique(values) { const seen = new Set(); return values.filter(value => { const clean = String(value || "").trim(); const key = normalizeText(clean); if (!clean || seen.has(key)) return false; seen.add(key); return true; }); }
+    function getPrices(data) { return data.map(item => Number(item.precioUsd || 0)).filter(value => Number.isFinite(value) && value > 0); }
+    function average(values) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
+    function percent(value, total) { return `${total ? ((value / total) * 100).toFixed(1) : "0.0"}%`; }
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+    function brandColor(brand, alpha) { const b = normalizeText(brand); if (b === "bipa") return `rgba(47,111,237,${alpha})`; if (b.includes("estrella")) return `rgba(217,119,6,${alpha})`; if (b.includes("patrona")) return `rgba(124,58,237,${alpha})`; if (b.includes("santa")) return `rgba(20,184,166,${alpha})`; return `rgba(20,27,45,${alpha})`; }
+    function isBipa(item) { return normalizeText(item && item.marca) === "bipa" || normalizeText(item && item.articulo).startsWith("bipa"); }
+    function gapColor(value, alpha) { const n = Number(value || 0); if (n <= 5) return `rgba(0,168,120,${alpha})`; if (n <= 15) return `rgba(217,119,6,${alpha})`; return `rgba(224,49,49,${alpha})`; }
+    function animateNumber(element, target) { const start = Number(element.dataset.value || 0), end = Number(target || 0), started = performance.now(); function tick(now) { const p = Math.min((now - started) / 420, 1), v = start + (end - start) * (1 - Math.pow(1 - p, 3)); element.textContent = Math.round(v).toLocaleString("es-VE"); if (p < 1) requestAnimationFrame(tick); } element.dataset.value = String(end); requestAnimationFrame(tick); }
+    function debounce(fn, delay) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); }; }
+    function normalizeText(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); }
+    function truncate(value, max) { const text = String(value || ""); return text.length > max ? `${text.slice(0, max - 3)}...` : text; }
+    function formatCurrency(value) { return Number(value || 0).toLocaleString("es-VE", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function formatNumber(value) { return Number(value || 0).toLocaleString("es-VE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+    function formatPercent(value) { return `${Number(value || 0).toFixed(2)}%`; }
+    function formatDateTime(date) { return date.toLocaleString("es-VE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+    function escapeHtml(value) { return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
   </script>
 </body>
 </html>
